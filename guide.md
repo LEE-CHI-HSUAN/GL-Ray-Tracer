@@ -46,9 +46,22 @@ flowchart TD
     ci --> ti 
 ```
 
+## Program Architecture
+
+```mermaid
+flowchart TD
+
+    main[main: init]
+    idle[idle: dispatch compute shader]
+    cs[compute shader]
+    display[display: blit texture]
+
+    main --> idle --> cs --> display --> idle
+```
 
 
 # References
 
 - [How to Install and Use GLUT in Visual Studio Code | Medium](https://medium.com/@aleksej.gudkov/how-to-install-and-use-glut-in-visual-studio-code-46c30243b264)
 - [C++ OpenGL setup for VSCode in 2min](https://www.youtube.com/watch?v=Y4F0tI7WlDs)
+- [Modern OpenGL Tutorial - Compute Shaders](https://www.youtube.com/watch?v=nF4X9BIUzx0)
