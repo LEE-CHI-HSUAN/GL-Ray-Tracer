@@ -22,6 +22,33 @@ g++ main.cpp -o main.exe \
   -lfreeglut -lglu32 -lopengl32 -lglew32 \
 ```
 
+# Roadmap
+
+```mermaid
+flowchart TD
+
+    cs[compute_shader]
+    rd[ray_direction]
+    cp[circle_primative]
+    ci[circle_intersection]
+    tfb[trace_function_beta]
+    tf[trace_function]
+    tp[triangle_primative]
+    ti[triangle_intersection]
+    bvh[BVH]
+    is[importance_sampling]
+    rt[refraction_in_trace]
+    
+    cs --> rd --> tfb --> tf --> bvh --> is
+    cp --> ci --> tfb
+    tp --> ti --> tf
+    tf --> rt
+    ci --> ti 
+```
+
+
+
 # References
 
 - [How to Install and Use GLUT in Visual Studio Code | Medium](https://medium.com/@aleksej.gudkov/how-to-install-and-use-glut-in-visual-studio-code-46c30243b264)
+- [C++ OpenGL setup for VSCode in 2min](https://www.youtube.com/watch?v=Y4F0tI7WlDs)
