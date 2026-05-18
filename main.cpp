@@ -159,7 +159,7 @@ int main(int argc, char **argv)
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 
     // init GL
-    initComputeShader("shader/compute.glsl"s);
+    initComputeShader("shader/ray_tracing.glsl"s);
     initTexture();
 
     glutKeyboardFunc(onKeyboard);
