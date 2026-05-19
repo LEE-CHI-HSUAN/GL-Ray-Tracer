@@ -1,5 +1,3 @@
-
-
 # Development Environment Setup
 
 - OS: Windows 11
@@ -48,6 +46,8 @@ flowchart TD
 
 ## Program Architecture
 
+### C++ Side
+
 ```mermaid
 flowchart TD
 
@@ -59,9 +59,26 @@ flowchart TD
     main --> idle --> cs --> display --> idle
 ```
 
+### Shader Side
+
+```mermaid
+flowchart TD
+
+    main[main: init]
+```
+
 
 # References
 
 - [How to Install and Use GLUT in Visual Studio Code | Medium](https://medium.com/@aleksej.gudkov/how-to-install-and-use-glut-in-visual-studio-code-46c30243b264)
 - [C++ OpenGL setup for VSCode in 2min](https://www.youtube.com/watch?v=Y4F0tI7WlDs)
 - [Modern OpenGL Tutorial - Compute Shaders](https://www.youtube.com/watch?v=nF4X9BIUzx0)
+
+## Tutorials
+
+- [OpenGL Official Index](https://wikis.khronos.org/opengl/Getting_Started#Tutorials_and_How_To_Guides)
+- [OpenGLBook Index](https://openglbook.com/)
+- [Learn OpenGL | GLFW](https://learnopengl.com/)
+- [OGL | GLUT](https://ogldev.org/)
+- [Anton's OpenGL 4 Tutorials (with ray trace) | Glad | GLFW](https://antongerdelan.net/opengl/)
+- [opengl-tutorial | GLFW](https://www.opengl-tutorial.org/)
