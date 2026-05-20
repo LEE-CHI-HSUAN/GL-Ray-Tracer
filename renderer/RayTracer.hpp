@@ -14,12 +14,12 @@
 class RayTracer
 {
 private:
-    GLuint computeProgram;   ///< The linked compute shader program
-    GLint workGroupSize[3];  ///< Work group size retrieved from the shader
-    GLuint textureOutput;    ///< Texture where the compute shader writes results
-    GLuint fboRescale;       ///< Framebuffer object for blitting the texture to the screen
-    int windowWidth = 640;   ///< Current window width
-    int windowHeight = 360;  ///< Current window height
+    GLuint computeProgram;  ///< The linked compute shader program
+    GLint workGroupSize[3]; ///< Work group size retrieved from the shader
+    GLuint textureOutput;   ///< Texture where the compute shader writes results
+    GLuint fboRescale;      ///< Framebuffer object for blitting the texture to the screen
+    int windowWidth = 640;  ///< Current window width
+    int windowHeight = 360; ///< Current window height
 
     /**
      * @brief Initializes the output texture and framebuffer.
@@ -58,4 +58,9 @@ public:
      * @brief Renders the result to the screen.
      */
     void displayScreen();
+
+    /**
+     * @brief Return the compute shader program.
+     */
+    GLuint getShaderProgram();
 };

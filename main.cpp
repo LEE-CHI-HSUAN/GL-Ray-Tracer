@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include "renderer/RayTracer.hpp"
+#include "scene/Scene.hpp"
 
 #define RT_DEFAULT_WIDTH 640
 #define RT_DEFAULT_HEIGHT 360
@@ -11,10 +12,11 @@ using namespace std::literals;
 
 // Global pointer to the RayTracer instance
 std::unique_ptr<RayTracer> rayTracer;
+std::unique_ptr<Scene> scene;
 
 /**
  * @brief Callback for keyboard events.
- * 
+ *
  * @param key The key pressed.
  * @param x The x-coordinate of the mouse.
  * @param y The y-coordinate of the mouse.
@@ -37,11 +39,9 @@ void onKeyboard(unsigned char key, int x, int y)
  */
 void idle()
 {
-    if (rayTracer)
-    {
-        rayTracer->dispatchCompute();
-        glutPostRedisplay();
-    }
+    scene->sendData();
+    rayTracer->dispatchCompute();
+    glutPostRedisplay();
 }
 
 /**
@@ -49,26 +49,22 @@ void idle()
  */
 void display()
 {
-    if (rayTracer)
-    {
-        rayTracer->displayScreen();
-        glutSwapBuffers();
-    }
+    rayTracer->displayScreen();
+    glutSwapBuffers();
 }
 
 /**
  * @brief Callback for window resizing.
- * 
+ *
  * @param w New window width.
  * @param h New window height.
  */
 void reshape(int w, int h)
 {
     glViewport(0, 0, w, h);
-    if (rayTracer)
-    {
-        rayTracer->setWindowSize(w, h);
-    }
+
+    rayTracer->setWindowSize(w, h);
+    scene->setCameraAspectRatio(w, h);
 }
 
 /**
@@ -97,6 +93,7 @@ int main(int argc, char **argv)
 
     // init GL interface
     rayTracer = std::make_unique<RayTracer>("shader/ray_tracing.glsl"s, RT_DEFAULT_WIDTH, RT_DEFAULT_HEIGHT);
+    scene = std::make_unique<Scene>(rayTracer->getShaderProgram());
 
     // register events
     glutKeyboardFunc(onKeyboard);

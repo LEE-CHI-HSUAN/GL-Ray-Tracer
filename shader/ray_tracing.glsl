@@ -8,13 +8,13 @@ layout(rgba32f, binding = 0) uniform image2D imgOutput;
 
 /* ---Struct--- */
 
-struct Camera
-{
+layout (std140) uniform CameraBlock {
     float nearClippingPlane;
     float farClippingPlane;
     float FoV;
     float aspectRatio;
-};
+    mat4 transform;
+} cam;
 
 struct Sphere
 {
@@ -80,7 +80,7 @@ void main() {
         return;
     }
     
-    Camera cam = {1.0, 100.0, 60.0, float(dims.x) / float(dims.y)};
+    // Camera cam = {1.0, 100.0, 60.0, float(dims.x) / float(dims.y)};
 
     // screen
     float H = cam.nearClippingPlane * tan(radians(cam.FoV) / 2.0) * 2.0;
@@ -92,8 +92,12 @@ void main() {
     // ray
     vec3 screen_offset = vec3(dW * (pixel_coords.x + 0.5), dH * (pixel_coords.y + 0.5), 0.0);
     vec3 pixel_pos = botLeftCorner + screen_offset;
-    vec3 ray_o = vec3(0.0, 0.0, 0.0);
-    Ray ray = Ray(ray_o, normalize(pixel_pos - ray_o));
+    
+    // Transform ray origin and pixel position to world space
+    vec4 ray_o_world = cam.transform * vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 pixel_pos_world = cam.transform * vec4(pixel_pos, 1.0);
+    
+    Ray ray = Ray(ray_o_world.xyz, normalize(pixel_pos_world.xyz - ray_o_world.xyz));
 
     int n_sphere = 2;
     Sphere spheres[2];

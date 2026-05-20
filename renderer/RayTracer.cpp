@@ -3,7 +3,6 @@
 #include <GL/glew.h>
 #include <string>
 
-
 #pragma region Private Methods
 
 void RayTracer::initTexture()
@@ -12,13 +11,13 @@ void RayTracer::initTexture()
     glGenTextures(1, &textureOutput);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textureOutput);
-    
+
     // Set texture parameters for clamping and linear filtering
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    
+
     // Allocate texture memory with 32-bit float RGBA format
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, windowWidth, windowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 
@@ -26,7 +25,7 @@ void RayTracer::initTexture()
     glGenFramebuffers(1, &fboRescale);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fboRescale);
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureOutput, 0);
-    
+
     // Unbind to avoid accidental modifications
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 }
@@ -71,7 +70,7 @@ void RayTracer::dispatchCompute()
     // Ceiling division is used to ensure all pixels are covered
     GLuint groupX = (windowWidth + workGroupSize[0] - 1) / workGroupSize[0];
     GLuint groupY = (windowHeight + workGroupSize[1] - 1) / workGroupSize[1];
-    
+
     // Dispatch the compute shader
     glDispatchCompute(groupX, groupY, 1);
 
@@ -99,11 +98,16 @@ void RayTracer::displayScreen()
     // Display Result: Blit the texture from our internal FBO to the screen (default framebuffer 0)
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fboRescale);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    
+
     // Perform the blit with nearest-neighbor filtering
     glBlitFramebuffer(0, 0, windowWidth, windowHeight,
                       0, 0, windowWidth, windowHeight,
                       GL_COLOR_BUFFER_BIT, GL_NEAREST);
+}
+
+GLuint RayTracer::getShaderProgram()
+{
+    return computeProgram;
 }
 
 #pragma endregion Public Methods
