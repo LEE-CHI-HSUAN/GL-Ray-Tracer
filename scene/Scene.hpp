@@ -13,14 +13,43 @@
 class Scene
 {
 private:
-    Camera camera; ///< The camera used to view the scene
+    Camera camera;     // The camera used to view the scene
+    GLuint sphereSsbo; //
+
+    void spawnSpheres()
+    {
+        int numSpheres = 3;
+        Sphere spheres[numSpheres] =
+            {{glm::vec3(2.0, 0.0, -10.0), 5.0f},
+             {glm::vec3(-2.0, -1.0, -7.0), 2.0f},
+             {glm::vec3(6.0, -1.0, -5.0), 0.7f}};
+
+        // Create the buffer
+        glGenBuffers(1, &sphereSsbo);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, sphereSsbo);
+
+        // Allocate memory
+        // Sphere aligns by 16. The first 16 includes an int and padding.
+        int bufferSize = 16 + numSpheres * sizeof(Sphere);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, NULL, GL_STATIC_DRAW);
+
+        // Write data to the buffer
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int), &numSpheres);
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, numSpheres * sizeof(Sphere), spheres);
+
+        // Bind the buffer to a binding point
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, sphereSsbo);
+    }
 
 public:
     /**
      * @brief Constructor for the Scene class.
      * @param shaderProgram The shader program used for rendering.
      */
-    Scene(const GLuint shaderProgram) : camera(shaderProgram) {}
+    Scene(const GLuint shaderProgram) : camera(shaderProgram)
+    {
+        spawnSpheres();
+    }
 
     /**
      * @brief Updates the camera's aspect ratio.

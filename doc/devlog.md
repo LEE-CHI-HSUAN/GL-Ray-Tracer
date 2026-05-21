@@ -21,12 +21,27 @@ The direction of rays are finally aquired by subtraction and normalization. Rays
 
 ## Sphere primative calculation
 
-A ray needs to hit an object so that the color of pixel can be calculated. The key information of a hit is the position and surface normal. Before we can render complex meshes, it is more easy to just render some simple shapes that are lightweight and easy to compute ray-object intersection. A sphere is a good start.
+A ray needs to hit an object so that the color of pixel can be calculated. The key information of a hit is the position and surface normal. Before we can render complex meshes, it is more easy to just render some simple shapes that are lightweight and easy to compute ray-object intersection. A sphere is a good start because the intersection of a line and a sphere is easy to compute.
 
-## camera movement
+A ray can be represented by a point plus a direction,
 
-- [] uniform object buffer
+$$
+P = \text{origin} + t\cdot\text{direction}
+$$
 
-TODO: input system
+where $t$ is an arbitrary positive integer. By determine $t$, we can find a point on the ray. So the possible 2 intersection points can be obtained by solving the following equation:
+
+$$
+\text{radius}^2 = ||\text{center} - P||^2 \\
+= ||\text{center} - (\text{origin} + t\cdot\text{direction})||^2
+$$
+
+This is a quadratic equation of $t$, and there is a formula to get the 2 roots of it.
+
+With the basic intersection detection algorithm, I am able to find the point and normal of on the surface of a sphere a ray hit. The following images are depth and normal which are rendered by ray casting.
+
+|     |     |
+| --- | --- |
+| ![](../asset/ballsnormal.png) | ![](../asset/ballsdepth.png) |
 
 ## Ray tracing function

@@ -18,3 +18,13 @@ struct CameraData
     float aspectRatio = 1.0f;              // Aspect ratio of the viewport
     glm::mat4 transform = glm::mat4(1.0f); // Camera-to-world transformation matrix
 };
+
+/**
+ * @struct Sphere
+ * @brief Data structure for sphere parameters.
+ */
+struct alignas(16) Sphere
+{
+    glm::vec3 center;
+    float radius;
+};
