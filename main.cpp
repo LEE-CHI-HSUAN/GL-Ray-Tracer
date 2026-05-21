@@ -16,6 +16,7 @@ std::unique_ptr<Scene> scene;
 
 /**
  * @brief Callback for keyboard events.
+ * Handles ASDWQE keys for camera movement.
  *
  * @param key The key pressed.
  * @param x The x-coordinate of the mouse.
@@ -27,6 +28,59 @@ void onKeyboard(unsigned char key, int x, int y)
     {
     case 27: // Escape key
         glutLeaveMainLoop();
+        break;
+    case 'w':
+    case 'W':
+        scene->moveCamera(CameraMovement::FORWARD);
+        break;
+    case 's':
+    case 'S':
+        scene->moveCamera(CameraMovement::BACKWARD);
+        break;
+    case 'a':
+    case 'A':
+        scene->moveCamera(CameraMovement::LEFT);
+        break;
+    case 'd':
+    case 'D':
+        scene->moveCamera(CameraMovement::RIGHT);
+        break;
+    case 'q':
+    case 'Q':
+        scene->moveCamera(CameraMovement::DOWN);
+        break;
+    case 'e':
+    case 'E':
+        scene->moveCamera(CameraMovement::UP);
+        break;
+    default:
+        break;
+    }
+}
+
+/**
+ * @brief Callback for special keyboard events.
+ * Handles arrow keys for camera rotation.
+ *
+ * @param key The special key pressed.
+ * @param x The x-coordinate of the mouse.
+ * @param y The y-coordinate of the mouse.
+ */
+void onSpecialKeyboard(int key, int x, int y)
+{
+    switch (key)
+    {
+    case GLUT_KEY_UP:
+        scene->rotateCamera(0.0f, 1.0f);
+        break;
+    case GLUT_KEY_DOWN:
+        scene->rotateCamera(0.0f, -1.0f);
+        break;
+    case GLUT_KEY_LEFT:
+        scene->rotateCamera(-1.0f, 0.0f);
+        break;
+    case GLUT_KEY_RIGHT:
+        scene->rotateCamera(1.0f, 0.0f);
         break;
     default:
         break;
@@ -97,6 +151,7 @@ int main(int argc, char **argv)
 
     // register events
     glutKeyboardFunc(onKeyboard);
+    glutSpecialFunc(onSpecialKeyboard);
     glutIdleFunc(idle);
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);

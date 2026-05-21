@@ -23,4 +23,10 @@ The direction of rays are finally aquired by subtraction and normalization. Rays
 
 A ray needs to hit an object so that the color of pixel can be calculated. The key information of a hit is the position and surface normal. Before we can render complex meshes, it is more easy to just render some simple shapes that are lightweight and easy to compute ray-object intersection. A sphere is a good start.
 
+## camera movement
+
+- [] uniform object buffer
+
+TODO: input system
+
 ## Ray tracing function
