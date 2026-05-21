@@ -8,21 +8,8 @@
 #include <GL/freeglut.h>
 #include "SceneTypes.hpp"
 #include "../glm/glm/gtc/matrix_transform.hpp"
+#include "../glm/glm/gtc/quaternion.hpp"
 #include <algorithm>
-
-/**
- * @enum CameraMovement
- * @brief Defines possible directions for camera movement.
- */
-enum class CameraMovement
-{
-    FORWARD,
-    BACKWARD,
-    LEFT,
-    RIGHT,
-    UP,
-    DOWN
-};
 
 /**
  * @class Camera
@@ -35,25 +22,34 @@ private:
     unsigned int uboCamera; // Uniform Buffer Object for camera data
 
     // Camera state for fly-through movement
-    glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f); // Camera position in world space
-    float yaw = -90.0f;                               // Yaw angle in degrees (initially looking down -Z)
-    float pitch = 0.0f;                               // Pitch angle in degrees
-    float movementSpeed = 0.1f;                       // Speed of camera movement
-    float rotationSpeed = 1.0f;                       // Sensitivity of camera rotation
+    glm::vec3 position = glm::vec3();
+    glm::quat orientation = glm::quat();
+
+    // Cached direction vectors
+    glm::vec3 front;
+    glm::vec3 right;
+    glm::vec3 up;
+
+    // configuration
+    float movementSpeed = 0.2f; // Speed of camera movement
+    float rotationSpeed = 2.0f; // Sensitivity of camera rotation
 
     /**
      * @brief Updates the camera transformation matrix based on position and orientation.
      */
     void updateTransformMatrix()
     {
-        glm::vec3 front;
-        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-        front.y = sin(glm::radians(pitch));
-        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-        front = glm::normalize(front);
+        orientation = glm::normalize(orientation);
 
-        // The transform matrix for the shader is the camera-to-world matrix (inverse of View matrix)
-        camData.transform = glm::inverse(glm::lookAt(position, position + front, glm::vec3(0.0f, 1.0f, 0.0f)));
+        // Extract direction vectors from orientation
+        front = orientation * glm::vec3(0.0f, 0.0f, -1.0f);
+        right = orientation * glm::vec3(1.0f, 0.0f, 0.0f);
+        up = orientation * glm::vec3(0.0f, 1.0f, 0.0f);
+
+        // The transform matrix for the shader is the camera-to-world matrix
+        glm::mat4 rotation = glm::mat4_cast(orientation);
+        glm::mat4 translation = glm::translate(glm::mat4(1.0f), position);
+        camData.transform = translation * rotation;
     }
 
 public:
@@ -93,32 +89,14 @@ public:
     }
 
     /**
-     * @brief Moves the camera in the specified direction.
-     * @param direction The direction to move.
+     * @brief Moves the camera in the specified input.
+     * @param input The movement in camera's local space.
      */
-    void move(CameraMovement direction)
+    void move(glm::vec3 input)
     {
-        glm::vec3 front;
-        front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-        front.y = sin(glm::radians(pitch));
-        front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-        front = glm::normalize(front);
-
-        glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0.0f, 1.0f, 0.0f)));
-        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-
-        if (direction == CameraMovement::FORWARD)
-            position += front * movementSpeed;
-        if (direction == CameraMovement::BACKWARD)
-            position -= front * movementSpeed;
-        if (direction == CameraMovement::LEFT)
-            position -= right * movementSpeed;
-        if (direction == CameraMovement::RIGHT)
-            position += right * movementSpeed;
-        if (direction == CameraMovement::UP)
-            position += up * movementSpeed;
-        if (direction == CameraMovement::DOWN)
-            position -= up * movementSpeed;
+        // transform input from local to global using cached vectors
+        glm::vec3 worldMove = (right * input.x) + (up * input.y) + (front * input.z);
+        position += worldMove * movementSpeed;
 
         updateTransformMatrix();
     }
@@ -128,13 +106,17 @@ public:
      * @param yawOffset The offset to apply to the yaw angle.
      * @param pitchOffset The offset to apply to the pitch angle.
      */
-    void rotate(float yawOffset, float pitchOffset)
+    void rotate(glm::vec2 input)
     {
-        yaw += yawOffset * rotationSpeed;
-        pitch += pitchOffset * rotationSpeed;
+        float yawOffset = input.x, pitchOffset = input.y;
 
-        // Clamp pitch to avoid gimbal lock
-        pitch = std::clamp(pitch, -89.0f, 89.0f);
+        // Horizontal rotation around the world UP axis
+        glm::quat qYaw = glm::angleAxis(glm::radians(-yawOffset * rotationSpeed), glm::vec3(0.0f, 1.0f, 0.0f));
+        // Vertical rotation around the local RIGHT axis
+        glm::quat qPitch = glm::angleAxis(glm::radians(pitchOffset * rotationSpeed), glm::vec3(1.0f, 0.0f, 0.0f));
+
+        // Apply rotations: Global Yaw * Current Orientation * Local Pitch
+        orientation = qYaw * orientation * qPitch;
 
         updateTransformMatrix();
     }

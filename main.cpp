@@ -24,38 +24,47 @@ std::unique_ptr<Scene> scene;
  */
 void onKeyboard(unsigned char key, int x, int y)
 {
+    if (key == 27) // escape
+    {
+        glutLeaveMainLoop();
+        return;
+    }
+
+    glm::vec3 inputAxis3;
     switch (key)
     {
-    case 27: // Escape key
-        glutLeaveMainLoop();
-        break;
     case 'w':
     case 'W':
-        scene->moveCamera(CameraMovement::FORWARD);
+        inputAxis3 = glm::vec3(0, 0, 0.5f);
         break;
     case 's':
     case 'S':
-        scene->moveCamera(CameraMovement::BACKWARD);
+        inputAxis3 = glm::vec3(0, 0, -0.5f);
         break;
     case 'a':
     case 'A':
-        scene->moveCamera(CameraMovement::LEFT);
+        inputAxis3 = glm::vec3(-0.5f, 0, 0);
         break;
     case 'd':
     case 'D':
-        scene->moveCamera(CameraMovement::RIGHT);
+        inputAxis3 = glm::vec3(0.5f, 0, 0);
         break;
     case 'q':
     case 'Q':
-        scene->moveCamera(CameraMovement::DOWN);
+        inputAxis3 = glm::vec3(0, -0.5f, 0);
         break;
     case 'e':
     case 'E':
-        scene->moveCamera(CameraMovement::UP);
+        inputAxis3 = glm::vec3(0, 0.5f, 0);
         break;
     default:
         break;
     }
+
+    if (glutGetModifiers() & GLUT_ACTIVE_SHIFT)
+        inputAxis3 *= 2.0f;
+
+    scene->moveCamera(inputAxis3);
 }
 
 /**
@@ -68,23 +77,29 @@ void onKeyboard(unsigned char key, int x, int y)
  */
 void onSpecialKeyboard(int key, int x, int y)
 {
+    glm::vec2 inputAxis2;
     switch (key)
     {
     case GLUT_KEY_UP:
-        scene->rotateCamera(0.0f, 1.0f);
+        inputAxis2 = glm::vec2(0.0f, 0.5f);
         break;
     case GLUT_KEY_DOWN:
-        scene->rotateCamera(0.0f, -1.0f);
+        inputAxis2 = glm::vec2(0.0f, -0.5f);
         break;
     case GLUT_KEY_LEFT:
-        scene->rotateCamera(-1.0f, 0.0f);
+        inputAxis2 = glm::vec2(-0.5f, 0.0f);
         break;
     case GLUT_KEY_RIGHT:
-        scene->rotateCamera(1.0f, 0.0f);
+        inputAxis2 = glm::vec2(0.5f, 0.0f);
         break;
     default:
         break;
     }
+
+    if (glutGetModifiers() & GLUT_ACTIVE_SHIFT)
+        inputAxis2 *= 2.0f;
+
+    scene->rotateCamera(inputAxis2);
 }
 
 /**

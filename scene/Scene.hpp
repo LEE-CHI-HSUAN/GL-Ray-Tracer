@@ -36,7 +36,7 @@ public:
      * @brief Moves the camera in the specified direction.
      * @param direction The direction to move the camera.
      */
-    void moveCamera(CameraMovement direction)
+    void moveCamera(glm::vec3 direction)
     {
         camera.move(direction);
     }
@@ -46,9 +46,9 @@ public:
      * @param yawOffset Horizontal rotation offset.
      * @param pitchOffset Vertical rotation offset.
      */
-    void rotateCamera(float yawOffset, float pitchOffset)
+    void rotateCamera(glm::vec2 yawPitch)
     {
-        camera.rotate(yawOffset, pitchOffset);
+        camera.rotate(yawPitch);
     }
 
     /**

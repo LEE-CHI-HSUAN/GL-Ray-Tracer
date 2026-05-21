@@ -49,14 +49,51 @@ flowchart TD
 ### C++ Side
 
 ```mermaid
-flowchart TD
+classDiagram
+    class RayTracer {
+        -GLuint computeProgram
+        -GLuint textureOutput
+        -GLuint fboRescale
+        +dispatchCompute()
+        +displayScreen()
+        +setWindowSize(int w, int h)
+        +getShaderProgram() GLuint
+    }
 
-    main[main: init]
-    idle[idle: dispatch compute shader]
-    cs[compute shader]
-    display[display: blit texture]
+    class Scene {
+        -Camera camera
+        +moveCamera(vec3 direction)
+        +rotateCamera(vec2 yawpitch)
+        +setCameraAspectRatio(int w, int h)
+        +sendData()
+    }
 
-    main --> idle --> cs --> display --> idle
+    class Camera {
+        -CameraData camData
+        -GLuint uboCamera
+        +move(vec3 input)
+        +rotate(vec2 input)
+        +setAspect(int w, int h)
+        +sendCameraData()
+    }
+
+    class CameraData {
+        <<struct>>
+        +float nearClippingPlane
+        +float farClippingPlane
+        +float FoV
+        +float aspectRatio
+        +mat4 transform
+    }
+
+    class ShaderLoader {
+        <<utility>>
+        +initComputeShader(string file) GLuint
+    }
+
+    RayTracer ..> ShaderLoader : uses
+    Scene *-- Camera : composition
+    Camera *-- CameraData : composition
 ```
 
 ### Shader Side
