@@ -147,7 +147,7 @@ int main(int argc, char **argv)
     glutInitWindowSize(RT_DEFAULT_WIDTH, RT_DEFAULT_HEIGHT);
     glutInitContextVersion(4, 6);
     glutInitContextFlags(GLUT_DEBUG);
-    glutCreateWindow("Ray Tracer Bridge");
+    glutCreateWindow("Ray Tracer");
 
     // IMPORTANT: You must initialize GLEW after the window is created!
     GLenum err = glewInit();
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 
     // init GL interface
-    rayTracer = std::make_unique<RayTracer>("shader/ray_tracing.glsl"s, RT_DEFAULT_WIDTH, RT_DEFAULT_HEIGHT);
+    rayTracer = std::make_unique<RayTracer>("shader/ray_tracing.comp"s, RT_DEFAULT_WIDTH, RT_DEFAULT_HEIGHT);
     scene = std::make_unique<Scene>(rayTracer->getShaderProgram());
 
     // register events

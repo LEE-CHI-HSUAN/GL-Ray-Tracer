@@ -51,6 +51,45 @@ layout(std430, binding=1) buffer SphereBuffer {
     Sphere spheres[]; // alignment: 16
 };
 
+/* ---Random Number Generator--- */
+
+uint hash(uint x) {
+    x += (x << 10u);
+    x ^= (x >> 6u);
+    x += (x << 3u);
+    x ^= (x >> 11u);
+    x += (x << 15u);
+    return x;
+}
+
+// Return uniform random float [0, 1]
+float random(inout uint seed) {
+    const uint mantissaMask = 0x007FFFFFu;
+    const uint one = 0x3F800000u;
+    
+    seed = hash(seed);
+    uint h = (seed & mantissaMask) | one;
+    return uintBitsToFloat(h) - 1.0;
+}
+
+// Return uniform random point on a sphere
+vec3 randomDirection(inout uint seed) {
+    float u1 = random(seed); // For azimuthal angle
+    float u2 = random(seed); // For z-axis distribution
+
+    float phi = 2.0 * 3.14159265 * u1;
+    float z = 1.0 - 2.0 * u2; // Range [-1, 1]
+    float r = sqrt(1.0 - z * z); // Radius in the xy-plane
+
+    return vec3(r * cos(phi), r * sin(phi), z);
+}
+
+// Return uniform random point on a hemisphere
+vec3 randomDirectionOnHemisphere(vec3 normal, inout uint seed) {
+    vec3 dir = randomDirection(seed);
+    return dir * sign(dot(dir, normal));
+}
+
 /* ---Helper Functions--- */
 
 RayCastHit raySphereHit(Ray ray, Sphere sphere) {
@@ -113,6 +152,8 @@ Ray getPrimaryRay(ivec2 pixel_id, ivec2 image_size) {
     return Ray(ray_o_world.xyz, normalize(pixel_pos_world.xyz - ray_o_world.xyz));
 }
 
+/* ---Debug View--- */
+
 vec4 renderDepth(Ray ray) {
     RayCastHit hit_info = rayCastForSphere(ray);
 
@@ -146,6 +187,14 @@ vec4 renderBaseColor(Ray ray) {
     }
 }
 
+vec4 testRandom(Ray ray) {
+    uint seed = floatBitsToUint(dot(ray.dir, vec3(1)));
+    float r = random(seed);
+    float g = random(seed);
+    float b = random(seed);
+    return vec4(r, g, b, 1.0);
+}
+
 /* ---Main--- */
 
 void main() {
@@ -162,7 +211,8 @@ void main() {
     
     // vec4 pixel = renderNormal(ray);
     // vec4 pixel = renderDepth(ray);
-    vec4 pixel = renderBaseColor(ray);
+    // vec4 pixel = renderBaseColor(ray);
+    vec4 pixel = testRandom(ray);
 
     // Write to texture
     imageStore(img_output, pixel_id, pixel);
