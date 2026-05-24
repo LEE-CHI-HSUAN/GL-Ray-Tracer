@@ -44,4 +44,12 @@ With the basic intersection detection algorithm, I am able to find the point and
 | --- | --- |
 | ![](../asset/ballsnormal.png) | ![](../asset/ballsdepth.png) |
 
+### Side Track: Moving Camera
+
+I implement camera fly-through movement, allowing the user to view the scene from different angles. The camera transform matrix and viewport parameters are synchronized via uniform buffer object.
+
+### Side Track: SSBO
+
+The scene comprising spheres was originally written in the compute shader. I move the scene data to the CPU code, and send it to the shader program using shader storage buffer object. This allow me to freely adjust and update the scene from the CPU side, and also pave the way for the future use, when I have to load 3D models. 
+
 ## Ray tracing function

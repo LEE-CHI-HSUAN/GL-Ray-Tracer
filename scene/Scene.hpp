@@ -18,11 +18,12 @@ private:
 
     void spawnSpheres()
     {
-        int numSpheres = 3;
+        int numSpheres = 4;
         Sphere spheres[numSpheres];
-        spheres[0] = Sphere(glm::vec3(2.0, 0.0, -10.0), 5.0f, Material(glm::vec4(0.5, 0.1, 0.8, 1.0)));
-        spheres[1] = Sphere(glm::vec3(-2.0, -1.0, -7.0), 2.0f, Material(glm::vec4(0.9, 0.1, 0.3, 1.0)));
-        spheres[2] = Sphere(glm::vec3(6.0, -1.0, -5.0), 0.7f, Material(glm::vec4(0.4, 0.8, 0.4, 1.0)));
+        spheres[0] = Sphere(glm::vec3(0.0, -55.0, -10.2), 54.2f, Material(glm::vec4(0.9, 0.9, 0.9, 1.0)));
+        spheres[1] = Sphere(glm::vec3(-3.34, -0.2, -7.21), 0.63f, Material(glm::vec4(0.9, 0.1, 0.3, 1.0)));
+        spheres[2] = Sphere(glm::vec3(-0.44, -0.0, -8.17), 1.0f, Material(glm::vec4(0.4, 0.8, 0.4, 1.0)));
+        spheres[3] = Sphere(glm::vec3(-17.1, 0.28, -42.9), 22.75f, Material(glm::vec4(0), glm::vec3(1.0, 1.0, 1.0), 1.0f));
 
         // Create the buffer
         glGenBuffers(1, &sphereSsbo);
