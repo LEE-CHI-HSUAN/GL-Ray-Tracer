@@ -23,6 +23,11 @@ g++ main.cpp -o main.exe \
 # Roadmap
 
 ```mermaid
+---
+config:
+  flowchart:
+    curve: basis
+---
 flowchart TD
 
     cs[compute_shader]
@@ -99,11 +104,47 @@ classDiagram
 ### Shader Side
 
 ```mermaid
-flowchart TD
+---
+config:
+  flowchart:
+    curve: basis
+---
+graph LR
+    subgraph Buffers ["Data Buffers (CPU to GPU)"]
+        CB[CameraBlock: Uniform Buffer]
+        SB[SphereBuffer: Shader Storage Buffer]
+    end
 
-    main[main: init]
+    subgraph Shader ["Ray Tracing Shader (compute.glsl / ray_tracing.glsl)"]
+        direction TB
+        Main[main]
+        GPR[getPrimaryRay]
+        RCFS[rayCastForSphere]
+        RSH[raySphereHit]
+        Output[(img_output: image2D)]
+
+        Main --> GPR
+        Main --> RCFS
+        RCFS --> RSH
+        Main --> Output
+    end
+
+    CB -.- GPR
+    SB -.- RCFS
+    GPR -.-> Main
+    RCFS -.-> Main
+    
+    style Buffers fill:#d9b,stroke:#333,stroke-width:0px
+    style Shader fill:#bbf,stroke:#333,stroke-width:0px
+    style Output fill:#dfd,stroke:#333,stroke-width:1px
+    linkStyle 4,5 stroke:#999,stroke-width:2px;
 ```
 
+The shader architecture follows a standard ray tracing pipeline:
+1.  **Entry Point (`main`)**: Orchestrates the ray tracing process for each pixel.
+2.  **Ray Generation (`getPrimaryRay`)**: Uses `CameraBlock` uniform data to transform pixel coordinates into world-space rays.
+3.  **Intersection Logic (`rayCastForSphere` & `raySphereHit`)**: Iterates through the `SphereBuffer` to find the closest intersection point.
+4.  **Output**: Stores the resulting color (e.g., normal mapping or depth) into the `img_output` texture.
 
 # References
 

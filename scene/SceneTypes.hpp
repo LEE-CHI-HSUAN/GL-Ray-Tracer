@@ -20,11 +20,30 @@ struct CameraData
 };
 
 /**
+ * @struct Material
+ * @brief Data structure for Material parameters.
+ */
+struct Material
+{
+    glm::vec4 color = glm::vec4(1.0f);
+
+    Material() = default;
+    Material(glm::vec4 color) : color(color) {}
+};
+
+/**
  * @struct Sphere
  * @brief Data structure for sphere parameters.
  */
 struct alignas(16) Sphere
 {
-    glm::vec3 center;
-    float radius;
+    glm::vec3 center = glm::vec3(0.0f);
+    float radius = 1.0f;
+    Material material;
+
+    Sphere() = default;
+    Sphere(glm::vec3 center, float radius, Material material)
+        : center(center),
+          radius(radius),
+          material(material) {}
 };

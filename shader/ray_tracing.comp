@@ -8,10 +8,16 @@ layout(rgba32f, binding = 0) uniform image2D img_output;
 
 /* ---Struct--- */
 
+struct Material
+{
+    vec4 color;
+};
+
 struct Sphere
 {
     vec3 center;
     float radius;
+    Material material;
 };
 
 struct Ray
@@ -26,11 +32,12 @@ struct RayCastHit
     float distance;
     vec3 point;
     vec3 normal;
+    Material material;
 };
 
 /* ---Global Variables---*/
 
-layout (std140) uniform CameraBlock {
+layout (std140, binding=0) uniform CameraBlock {
     float near_clipping_plane;
     float far_clipping_plane;
     float FoV;
@@ -68,16 +75,16 @@ RayCastHit raySphereHit(Ray ray, Sphere sphere) {
         {
             vec3 hit_point = ray.origin + ray.dir * shortest_distance;
             vec3 normal = normalize(hit_point - sphere.center);
-            return RayCastHit(true, shortest_distance, hit_point, normal);
+            return RayCastHit(true, shortest_distance, hit_point, normal, sphere.material);
         }
     }
     
-    return RayCastHit(false, -1, vec3(0), vec3(0));
+    return RayCastHit(false, -1, vec3(0), vec3(0), Material(vec4(0)));
 }
 
 RayCastHit rayCastForSphere(Ray ray) {
     // initialize best_hit with a very large distance
-    RayCastHit best_hit = {false, 1e10, vec3(0), vec3(0)};
+    RayCastHit best_hit = RayCastHit(false, 1e10, vec3(0), vec3(0), Material(vec4(0)));
     // loop over every object to get the closest hit
     for (int i = 0; i < num_sphere; i++) { 
         RayCastHit hit_info = raySphereHit(ray, spheres[i]);
@@ -106,6 +113,39 @@ Ray getPrimaryRay(ivec2 pixel_id, ivec2 image_size) {
     return Ray(ray_o_world.xyz, normalize(pixel_pos_world.xyz - ray_o_world.xyz));
 }
 
+vec4 renderDepth(Ray ray) {
+    RayCastHit hit_info = rayCastForSphere(ray);
+
+    if (hit_info.hit) {
+        float local_z = 1 + (inverse(cam.transform) * vec4(hit_info.point, 1.0)).z / 8.0;
+        return vec4(local_z, local_z, local_z, 1.0);
+    } else {
+        return vec4(0.0); // black
+    }
+}
+
+vec4 renderNormal(Ray ray) {
+    RayCastHit hit_info = rayCastForSphere(ray);
+
+    if (hit_info.hit) {
+        vec3 local_normal = (inverse(cam.transform) * vec4(hit_info.normal, 0.0)).xyz;
+        vec3 normal_color = local_normal * 0.5 + 0.5; // remap (-1, 1) to (0, 1)
+        return vec4(normal_color, 1.0);
+    } else {
+        return vec4(0.0); // black
+    }
+}
+
+vec4 renderBaseColor(Ray ray) {
+    RayCastHit hit_info = rayCastForSphere(ray);
+
+    if (hit_info.hit) {
+        return hit_info.material.color;
+    } else {
+        return vec4(0.0); // black
+    }
+}
+
 /* ---Main--- */
 
 void main() {
@@ -119,20 +159,10 @@ void main() {
     }
 
     Ray ray = getPrimaryRay(pixel_id, dims);
-    RayCastHit hit_info = rayCastForSphere(ray);
     
-    vec4 pixel;
-    if (hit_info.hit) {
-        // normal
-        vec3 local_normal = (inverse(cam.transform) * vec4(hit_info.normal, 0.0)).xyz;
-        vec3 normal_color = local_normal * 0.5 + 0.5; // remap (-1, 1) to (0, 1)
-        pixel = vec4(normal_color, 1.0);
-        // // depth
-        // float local_z = 1 + (inverse(cam.transform) * vec4(hit_info.point, 1.0)).z / 8.0;
-        // pixel = vec4(local_z, local_z, local_z, 1.0);
-    } else {
-        pixel = vec4(0.0); // black
-    }
+    // vec4 pixel = renderNormal(ray);
+    // vec4 pixel = renderDepth(ray);
+    vec4 pixel = renderBaseColor(ray);
 
     // Write to texture
     imageStore(img_output, pixel_id, pixel);

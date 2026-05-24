@@ -19,10 +19,10 @@ private:
     void spawnSpheres()
     {
         int numSpheres = 3;
-        Sphere spheres[numSpheres] =
-            {{glm::vec3(2.0, 0.0, -10.0), 5.0f},
-             {glm::vec3(-2.0, -1.0, -7.0), 2.0f},
-             {glm::vec3(6.0, -1.0, -5.0), 0.7f}};
+        Sphere spheres[numSpheres];
+        spheres[0] = Sphere(glm::vec3(2.0, 0.0, -10.0), 5.0f, Material(glm::vec4(0.5, 0.1, 0.8, 1.0)));
+        spheres[1] = Sphere(glm::vec3(-2.0, -1.0, -7.0), 2.0f, Material(glm::vec4(0.9, 0.1, 0.3, 1.0)));
+        spheres[2] = Sphere(glm::vec3(6.0, -1.0, -5.0), 0.7f, Material(glm::vec4(0.4, 0.8, 0.4, 1.0)));
 
         // Create the buffer
         glGenBuffers(1, &sphereSsbo);
