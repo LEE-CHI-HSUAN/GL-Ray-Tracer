@@ -13,7 +13,7 @@ After I fixed the plane to a certain distance away, the only variance that can a
 
 Now that the width and height of the screen is definite, I first calculate the position of the bottom-left corner and then the offset from that corner according to screen space pixel position. The result is the corner of each pixel, so we need to offset by 0.5 to move to the center.
 
-The direction of rays are finally aquired by subtraction and normalization. Rays are calculated in camera's local coordinate, we can multiply by its transformation matrix to get the rays in the global coordinate.
+The direction of rays are finally acquired by subtraction and normalization. Rays are calculated in camera's local coordinate, we can multiply by its transformation matrix to get the rays in the global coordinate.
 
 |      |      |      |
 | ---- | ---- | ---- |
@@ -56,7 +56,7 @@ The scene comprising spheres was originally written in the compute shader. I mov
 
 The geometry of the sphere can now be probed by casting rays, I am able to implement a ray tracing function that calculate the path of a ray and the incoming light along it.
 
-Assuming the surface of the sphere are smooth and only reflect light like a mirror, this way, I don't have to calcuate diffusion rays and the ray casting from camera towards a specific direction is deterministic. When a ray hit a surface, a reflection ray is generated. The hit point is its origin, and the direction is
+Assuming the surface of the sphere are smooth and only reflect light like a mirror, this way, I don't have to calculate scattering rays and the ray casting from camera towards a specific direction is deterministic. When a ray hit a surface, a reflection ray is generated. The hit point is its origin, and the direction is
 $$
 \text{reflect\_dir} = \text{ray\_dir} - 2 \cdot \text{normal} \cdot \text{ray\_dir}
 $$
@@ -71,5 +71,36 @@ I placed 4 spheres in the scene, one of which is emissive, acting as a main ligt
 | --- | --- | --- |
 | ![](../asset/r1.png) | ![](../asset/r2.png) | ![](../asset/r5.png) |
 
-## Random direction on a hemishphere
+## Diffuse Reflection
+
+General objects have no perfectly smooth surfaces, so to render realistic images, my next step is to expand the ray tracing function to compute diffuse light. I replaced the reflection function with a random direction generator.
+
+### Random direction on a hemisphere
+
+
+Because there is no built-in random number generator, I have to built one by bit shifting. This pseudo random number samples `float` [0 ,1] from a uniform distribution.
+
+With this random number generator, there are several ways to get a random direction.
+
+The most naive one is simply sample three floats and do normalization. But this have and significant flaw that points tends to grow denser at some corner, since is was sampled in a unit cube.
+
+A workaround is to discard points outside the unit sphere, and the result is a perfect uniform distribution on the surface of the sphere. The drawback of this is that it require an infinte loop that keep resample points once the previous one failed, although the average iterations is less than 2.
+
+Another approach is to sample floats from a normal distribution, but this is more complex to compute than uniform distribution.
+
+I ultimately adopt a formula that samples and rescales 2 floats to get the polar coordinate of a point. This method requires less expensive math operation (e.g cos, square root).
+
+| More points on the edges | Even ditribution  |
+| --- | --- |
+| ![](../asset/sampledir1.png) | ![](../asset/sampledir2.png) |
+
+Finally, the goal is to generate directions on a hemisphere, however, the previous method generate points on a sphere. To fix it, we can examine whether a direction points outward by taking dot product, and flip the sign of the direction if it is negative.
+
+### Noise
+
+This is the result of the diffuse reflection. It looks terrible. Unlike smooth surface where lights travel along the same direction, diffuse reflection scatter rays stochastically.
+
+![](../asset/scatter1.png)
+
+According to the rendering equation, I need to sample innumerable amount of rays to approximate the integration of income lights. In practice, I need to set a limit to the number of rays per pixel.
 

@@ -23,7 +23,7 @@ private:
         spheres[0] = Sphere(glm::vec3(4.0, -55.0, -6.2), 54.2f, Material(glm::vec4(0.9, 0.9, 0.9, 1.0)));
         spheres[1] = Sphere(glm::vec3(0.66, -0.2, -3.21), 0.63f, Material(glm::vec4(0.8, 0.21, 0.17, 1.0)));
         spheres[2] = Sphere(glm::vec3(3.56, -0.0, -4.17), 1.0f, Material(glm::vec4(0.4, 0.76, 0.21, 1.0)));
-        spheres[3] = Sphere(glm::vec3(-13.1, 0.28, -38.9), 22.75f, Material(glm::vec4(0), glm::vec3(1.0, 1.0, 1.0), 1.0f));
+        spheres[3] = Sphere(glm::vec3(-13.1, 0.28, -38.9), 22.75f, Material(glm::vec4(0), glm::vec3(1.0, 1.0, 1.0), 5.0f));
 
         // Create the buffer
         glGenBuffers(1, &sphereSsbo);
