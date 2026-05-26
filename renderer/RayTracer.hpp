@@ -16,7 +16,8 @@ class RayTracer
 private:
     GLuint computeProgram;  ///< The linked compute shader program
     GLint workGroupSize[3]; ///< Work group size retrieved from the shader
-    GLuint textureOutput;   ///< Texture where the compute shader writes results
+    GLuint textures[2];     ///< Double buffers for accumulation
+    int currentTexture = 0; ///< Index of the texture to write to this frame
     GLuint fboRescale;      ///< Framebuffer object for blitting the texture to the screen
     int windowWidth = 640;  ///< Current window width
     int windowHeight = 360; ///< Current window height
@@ -43,8 +44,9 @@ public:
 
     /**
      * @brief Dispatches the compute shader to perform ray tracing.
+     * @param time The elapsed time in seconds.
      */
-    void dispatchCompute();
+    void dispatchCompute(float time);
 
     /**
      * @brief Updates the window size and resizes the output texture.

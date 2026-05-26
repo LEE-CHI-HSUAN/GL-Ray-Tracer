@@ -7,6 +7,8 @@ layout(local_size_x = 16, local_size_y = 16) in;
 
 // The texture we are writing to
 layout(rgba32f, binding = 0) uniform image2D img_output;
+// The texture from the previous frame
+layout(rgba32f, binding = 1) uniform image2D img_previous;
 
 /* ---Struct--- */
 
@@ -42,6 +44,8 @@ struct RayCastHit
 };
 
 /* ---Global Variables---*/
+
+uniform float u_time;
 
 layout (std140, binding=0) uniform CameraBlock {
     float near_clipping_plane;
@@ -235,8 +239,9 @@ void main() {
         return;
     }
 
+    vec4 prev_pixel = imageLoad(img_previous, pixel_id);
     Ray ray = getPrimaryRay(pixel_id, dims);
-    uint seed = floatBitsToUint(dot(ray.dir, vec3(1)));
+    uint seed = floatBitsToUint(dot(ray.dir, vec3(1)) * u_time);
     
     // vec4 pixel = renderNormal(ray);
     // vec4 pixel = renderDepth(ray);
@@ -247,6 +252,8 @@ void main() {
         pixel += rayTrace(ray, seed);
     }
     pixel /= RAY_PER_PIXEL;
+
+    pixel = (pixel + prev_pixel) / 2.0;
 
     // Write to texture
     imageStore(img_output, pixel_id, pixel);

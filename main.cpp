@@ -109,7 +109,8 @@ void onSpecialKeyboard(int key, int x, int y)
 void idle()
 {
     scene->sendData();
-    rayTracer->dispatchCompute();
+    float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
+    rayTracer->dispatchCompute(time);
     glutPostRedisplay();
 }
 
