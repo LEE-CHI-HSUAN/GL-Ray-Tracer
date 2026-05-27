@@ -1,6 +1,7 @@
 #include "RayTracer.hpp"
 #include "../utils/ShaderLoader.hpp"
 #include <GL/glew.h>
+#include <GL/freeglut.h>
 #include <string>
 
 #pragma region Private Methods
@@ -33,16 +34,39 @@ void RayTracer::initTexture()
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 }
 
+void RayTracer::initParameterBuffer()
+{
+    // Create the buffer
+    glGenBuffers(1, &uboParameters);
+    glBindBuffer(GL_UNIFORM_BUFFER, uboParameters);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(RenderParameters), NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    // Bind the buffer to the binding point
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboParameters);
+}
+
+void RayTracer::sendRenderParameters(float time)
+{
+    parameters.time = time;
+    glBindBuffer(GL_UNIFORM_BUFFER, uboParameters);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(RenderParameters), &parameters);
+}
+
 #pragma endregion Private Methods
 
 #pragma region Constructors
 
 RayTracer::RayTracer(const std::string &filePath)
 {
+    windowWidth = glutGet(GLUT_WINDOW_WIDTH);
+    windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
+
     // Initialize the compute shader and retrieve its work group size
     computeProgram = initComputeShader(filePath);
     glGetProgramiv(computeProgram, GL_COMPUTE_WORK_GROUP_SIZE, workGroupSize);
     initTexture();
+    initParameterBuffer();
 }
 
 RayTracer::RayTracer(
@@ -55,19 +79,22 @@ RayTracer::RayTracer(
     computeProgram = initComputeShader(filePath);
     glGetProgramiv(computeProgram, GL_COMPUTE_WORK_GROUP_SIZE, workGroupSize);
     initTexture();
+    initParameterBuffer();
 }
 
 #pragma endregion Constructors
 
 #pragma region Public Methods
 
-void RayTracer::dispatchCompute(float time)
+int RayTracer::dispatchCompute(float time)
 {
+    if (parameters.cumulative_samples >= max_samples)
+        return 0;
+
     // Use the compute shader program
     glUseProgram(computeProgram);
-
-    // Set the time uniform
-    glUniform1f(glGetUniformLocation(computeProgram, "u_time"), time);
+    sendRenderParameters(time);
+    parameters.cumulative_samples += parameters.samplePerPixel;
 
     // Bind the output texture to image unit 0 (must match 'binding = 0' in GLSL)
     glBindImageTexture(0, textures[currentTexture], 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
@@ -87,6 +114,8 @@ void RayTracer::dispatchCompute(float time)
 
     // Swap textures for the next frame
     currentTexture = 1 - currentTexture;
+
+    return 1;
 }
 
 RayTracer *RayTracer::setWindowSize(int width, int height)
@@ -120,6 +149,14 @@ void RayTracer::displayScreen()
     glBlitFramebuffer(0, 0, windowWidth, windowHeight,
                       0, 0, windowWidth, windowHeight,
                       GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    // Unbind to avoid accidental modifications
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+}
+
+void RayTracer::ResetRenderSpp()
+{
+    parameters.cumulative_samples = 0;
 }
 
 GLuint RayTracer::getShaderProgram()

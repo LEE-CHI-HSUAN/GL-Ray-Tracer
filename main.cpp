@@ -65,6 +65,7 @@ void onKeyboard(unsigned char key, int x, int y)
         inputAxis3 *= 2.0f;
 
     scene->moveCamera(inputAxis3);
+    rayTracer->ResetRenderSpp();
 }
 
 /**
@@ -100,6 +101,7 @@ void onSpecialKeyboard(int key, int x, int y)
         inputAxis2 *= 2.0f;
 
     scene->rotateCamera(inputAxis2);
+    rayTracer->ResetRenderSpp();
 }
 
 /**
@@ -110,8 +112,8 @@ void idle()
 {
     scene->sendData();
     float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
-    rayTracer->dispatchCompute(time);
-    glutPostRedisplay();
+    if (rayTracer->dispatchCompute(time))
+        glutPostRedisplay();
 }
 
 /**
@@ -119,6 +121,7 @@ void idle()
  */
 void display()
 {
+    std::cout << '.'; // DEBUG
     rayTracer->displayScreen();
     glutSwapBuffers();
 }
@@ -134,6 +137,7 @@ void reshape(int w, int h)
     glViewport(0, 0, w, h);
 
     rayTracer->setWindowSize(w, h);
+    rayTracer->ResetRenderSpp();
     scene->setCameraAspectRatio(w, h);
 }
 

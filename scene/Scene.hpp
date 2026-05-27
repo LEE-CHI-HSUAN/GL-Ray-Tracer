@@ -14,7 +14,7 @@ class Scene
 {
 private:
     Camera camera;     // The camera used to view the scene
-    GLuint sphereSsbo; //
+    GLuint sphereSsbo; // Sphere data buffer
 
     void spawnSpheres()
     {
@@ -38,8 +38,8 @@ private:
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int), &numSpheres);
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, numSpheres * sizeof(Sphere), spheres);
 
-        // Bind the buffer to a binding point
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, sphereSsbo);
+        // Bind the buffer to the binding point
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, sphereSsbo);
     }
 
 public:

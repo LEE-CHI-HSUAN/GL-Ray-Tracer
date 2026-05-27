@@ -18,8 +18,8 @@
 class Camera
 {
 private:
-    CameraData camData;     // Camera data sent to the GPU
-    unsigned int uboCamera; // Uniform Buffer Object for camera data
+    CameraData camData; // Camera data sent to the GPU
+    GLuint uboCamera;   // Uniform Buffer Object for camera data
 
     // Camera state for fly-through movement
     glm::vec3 position = glm::vec3();
@@ -67,12 +67,12 @@ public:
         glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), NULL, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-        // Bind the buffer to a binding point (0)
-        glBindBufferBase(GL_UNIFORM_BUFFER, 0, uboCamera);
+        // Bind the buffer to the binding point
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, uboCamera);
 
-        // Connect Shader to the Binding Point (0)
-        unsigned int blockIndex = glGetUniformBlockIndex(shaderProgram, "CameraBlock");
-        glUniformBlockBinding(shaderProgram, blockIndex, 0);
+        // // Connect Shader to the Binding Point (0)
+        // unsigned int blockIndex = glGetUniformBlockIndex(shaderProgram, "CameraBlock");
+        // glUniformBlockBinding(shaderProgram, blockIndex, 0);
 
         updateTransformMatrix();
     }

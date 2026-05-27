@@ -1,6 +1,5 @@
 #version 460 core
 #define MAX_BOUNCE_TIMES 5
-#define RAY_PER_PIXEL 16
 
 // Process pixels in 16x16 blocks
 layout(local_size_x = 16, local_size_y = 16) in;
@@ -45,9 +44,13 @@ struct RayCastHit
 
 /* ---Global Variables---*/
 
-uniform float u_time;
+layout (std140, binding=0) uniform ParameterBlock {
+    float time;         // Time in second
+    int spp;            // Sample per pixel
+    int cumulative_spp; // Sample per pixel of the previous image
+} params;
 
-layout (std140, binding=0) uniform CameraBlock {
+layout (std140, binding=1) uniform CameraBlock {
     float near_clipping_plane;
     float far_clipping_plane;
     float FoV;
@@ -55,7 +58,7 @@ layout (std140, binding=0) uniform CameraBlock {
     mat4 transform;
 } cam;
 
-layout(std430, binding=1) buffer SphereBuffer {
+layout(std430, binding=2) buffer SphereBuffer {
     int num_sphere;
     // int _padding[3];
     Sphere spheres[]; // alignment: 16
@@ -241,19 +244,19 @@ void main() {
 
     vec4 prev_pixel = imageLoad(img_previous, pixel_id);
     Ray ray = getPrimaryRay(pixel_id, dims);
-    uint seed = floatBitsToUint(dot(ray.dir, vec3(1)) * u_time);
+    uint seed = floatBitsToUint(dot(ray.dir, vec3(1)) * params.time);
     
     // vec4 pixel = renderNormal(ray);
     // vec4 pixel = renderDepth(ray);
     // vec4 pixel = renderBaseColor(ray);
     // vec4 pixel = testRandom(ray);
     vec4 pixel = vec4(0);
-    for (int i = 0; i < RAY_PER_PIXEL; i++) {
+    for (int i = 0; i < params.spp; i++) {
         pixel += rayTrace(ray, seed);
     }
-    pixel /= RAY_PER_PIXEL;
 
-    pixel = (pixel + prev_pixel) / 2.0;
+    int total_samples = params.spp + params.cumulative_spp;
+    pixel = (pixel + params.cumulative_spp * prev_pixel) / total_samples;
 
     // Write to texture
     imageStore(img_output, pixel_id, pixel);

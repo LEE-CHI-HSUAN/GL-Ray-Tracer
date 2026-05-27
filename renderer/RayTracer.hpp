@@ -14,18 +14,40 @@
 class RayTracer
 {
 private:
-    GLuint computeProgram;  ///< The linked compute shader program
-    GLint workGroupSize[3]; ///< Work group size retrieved from the shader
-    GLuint textures[2];     ///< Double buffers for accumulation
-    int currentTexture = 0; ///< Index of the texture to write to this frame
-    GLuint fboRescale;      ///< Framebuffer object for blitting the texture to the screen
-    int windowWidth = 640;  ///< Current window width
-    int windowHeight = 360; ///< Current window height
+    GLuint computeProgram;  // The linked compute shader program
+    GLint workGroupSize[3]; // Work group size retrieved from the shader
+    GLuint textures[2];     // Double buffers for accumulation
+    int currentTexture = 0; // Index of the texture to write to this frame
+    GLuint fboRescale;      // Framebuffer object for blitting the texture to the screen
+    int windowWidth;        // Current window width
+    int windowHeight;       // Current window height
+
+    struct RenderParameters
+    {
+        float time;                 // Time in second
+        int samplePerPixel = 10;    // SPP, number of rays per pixel in one dispatch
+        int cumulative_samples = 0; // Number of SPP gathered for the current static scene
+    };
+
+    GLuint uboParameters;        // parameters data buffer
+    RenderParameters parameters; // parameters data container
+    int max_samples = 10000;     // Upper bound of SPP
 
     /**
      * @brief Initializes the output texture and framebuffer.
      */
     void initTexture();
+
+    /**
+     * @brief Initializes the uniform buffer object for render parameters
+     */
+    void initParameterBuffer();
+
+    /**
+     * @brief Pass arguments to the shader program
+     * @param time The elapsed time in seconds.
+     */
+    void sendRenderParameters(float time);
 
 public:
     /**
@@ -45,8 +67,9 @@ public:
     /**
      * @brief Dispatches the compute shader to perform ray tracing.
      * @param time The elapsed time in seconds.
+     * @return `0`: no update, `1`: new screen rendered
      */
-    void dispatchCompute(float time);
+    int dispatchCompute(float time);
 
     /**
      * @brief Updates the window size and resizes the output texture.
@@ -60,6 +83,11 @@ public:
      * @brief Renders the result to the screen.
      */
     void displayScreen();
+
+    /**
+     * @brief Reset the counter of sampler. Call this when resizing screen or the screen is not static
+     */
+    void ResetRenderSpp();
 
     /**
      * @brief Return the compute shader program.

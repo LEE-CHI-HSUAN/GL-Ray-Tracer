@@ -59,7 +59,7 @@ classDiagram
         -GLuint computeProgram
         -GLuint textureOutput
         -GLuint fboRescale
-        +dispatchCompute()
+        +dispatchCompute(float time)
         +displayScreen()
         +setWindowSize(int w, int h)
         +getShaderProgram() GLuint
