@@ -35,7 +35,6 @@ struct Ray
 
 struct RayCastHit
 {
-    bool hit;
     float distance;
     vec3 point;
     vec3 normal;
@@ -43,6 +42,8 @@ struct RayCastHit
 };
 
 /* ---Global Variables---*/
+
+const float EPSILON = 0.0000001;
 
 layout (std140, binding=0) uniform ParameterBlock {
     float time;         // Time in second
@@ -105,7 +106,7 @@ vec3 randomDirectionOnHemisphere(vec3 normal, inout uint seed) {
 
 /* ---Helper Functions--- */
 
-RayCastHit raySphereHit(Ray ray, Sphere sphere) {
+bool raySphereHit(Ray ray, Sphere sphere, out RayCastHit hit_info) {
     vec3 oc = ray.origin - sphere.center;
     
     // Simplified quadratic for normalized direction
@@ -121,24 +122,29 @@ RayCastHit raySphereHit(Ray ray, Sphere sphere) {
         {
             vec3 hit_point = ray.origin + ray.dir * t1;
             vec3 normal = normalize(hit_point - sphere.center);
-            return RayCastHit(true, t1, hit_point, normal, sphere.material);
+            hit_info = RayCastHit(t1, hit_point, normal, sphere.material);
+            return true;
         }
     }
     
-    return RayCastHit(false, -1, vec3(0), vec3(0), default_material);
+    return false;
 }
 
-RayCastHit rayCastForSphere(Ray ray) {
+bool rayCastForSphere(Ray ray, out RayCastHit best_hit) {
     // initialize best_hit with a very large distance
-    RayCastHit best_hit = RayCastHit(false, 1e10, vec3(0), vec3(0), default_material);
+    bool found_hit = false;
+    best_hit.distance = 1e10;
     // loop over every object to get the closest hit
     for (int i = 0; i < num_sphere; i++) { 
-        RayCastHit hit_info = raySphereHit(ray, spheres[i]);
-        if (hit_info.hit && hit_info.distance < best_hit.distance) {
-            best_hit = hit_info;
+        RayCastHit hit_info;
+        if (raySphereHit(ray, spheres[i], hit_info)) {
+            if (hit_info.distance < best_hit.distance) {
+                best_hit = hit_info;
+                found_hit = true;
+            }
         }
     }
-    return best_hit;
+    return found_hit;
 }
 
 Ray getPrimaryRay(ivec2 pixel_id, ivec2 image_size, inout uint seed) {
@@ -162,9 +168,8 @@ Ray getPrimaryRay(ivec2 pixel_id, ivec2 image_size, inout uint seed) {
 /* ---Debug View--- */
 
 vec4 renderDepth(Ray ray) {
-    RayCastHit hit_info = rayCastForSphere(ray);
-
-    if (hit_info.hit) {
+    RayCastHit hit_info;
+    if (rayCastForSphere(ray, hit_info)) {
         float local_z = 1 + (inverse(cam.transform) * vec4(hit_info.point, 1.0)).z / 8.0;
         return vec4(local_z, local_z, local_z, 1.0);
     } else {
@@ -173,9 +178,8 @@ vec4 renderDepth(Ray ray) {
 }
 
 vec4 renderNormal(Ray ray) {
-    RayCastHit hit_info = rayCastForSphere(ray);
-
-    if (hit_info.hit) {
+    RayCastHit hit_info;
+    if (rayCastForSphere(ray, hit_info)) {
         vec3 local_normal = (inverse(cam.transform) * vec4(hit_info.normal, 0.0)).xyz;
         vec3 normal_color = local_normal * 0.5 + 0.5; // remap (-1, 1) to (0, 1)
         return vec4(normal_color, 1.0);
@@ -185,9 +189,8 @@ vec4 renderNormal(Ray ray) {
 }
 
 vec4 renderBaseColor(Ray ray) {
-    RayCastHit hit_info = rayCastForSphere(ray);
-
-    if (hit_info.hit) {
+    RayCastHit hit_info;
+    if (rayCastForSphere(ray, hit_info)) {
         return hit_info.material.color;
     } else {
         return vec4(0.0); // black
@@ -210,8 +213,8 @@ vec4 rayTrace(Ray ray, inout uint seed) {
     vec3 ray_color = vec3(1.0);
 
     for (int i = 0; i <= MAX_BOUNCE_TIMES; i++) {
-        RayCastHit hit_info = rayCastForSphere(ray);
-        if (hit_info.hit) {
+        RayCastHit hit_info;
+        if (rayCastForSphere(ray, hit_info)) {
             // reflection ray
             // ray.dir = reflect(ray.dir, hit_info.normal);
             // cosine weighted sampling
