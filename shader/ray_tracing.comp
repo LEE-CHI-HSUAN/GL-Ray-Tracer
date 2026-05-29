@@ -27,6 +27,20 @@ struct Sphere
     Material material;
 };
 
+struct Model
+{
+    mat4 matrix;
+    int start;
+    int length;
+};
+
+struct Triangle
+{
+    vec3 vertex[3];
+    vec3 normal[3];
+    vec3 uv[3];
+};
+
 struct Ray
 {
     vec3 origin;
@@ -64,6 +78,23 @@ layout(std430, binding=2) buffer SphereBuffer {
     // int _padding[3];
     Sphere spheres[]; // alignment: 16
 };
+
+Triangle getTriangle(int i) {
+    if (i == 0) {
+        return Triangle(
+            vec3[3](vec3(-1.0, -1.0, -5.0), vec3(1.0, -1.0, -5.0), vec3(0.0, 1.0, -5.0)),
+            vec3[3](vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, 1.0)),
+            vec3[3](vec3(0.0, 0.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.5, 1.0, 0.0))
+        );
+    } else if (i == 1) {
+        return Triangle(
+            vec3[3](vec3(2.0, 2.0, -10.0), vec3(2.0, 5.0, -8.0), vec3(5.0, 3.0, -7.0)),
+            vec3[3](vec3(1.0, 1.0, 1.0), vec3(3.0, 0.0, 1.0), vec3(0.0, 3.0, 1.0)),
+            vec3[3](vec3(0.0, 0.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.5, 1.0, 0.0))
+        );
+    }
+}
+const int num_triangles = 2;
 
 /* ---Random Number Generator--- */
 
@@ -145,6 +176,90 @@ bool rayCastForSphere(Ray ray, out RayCastHit best_hit) {
         }
     }
     return found_hit;
+}
+
+bool rayTriangleHit(Ray ray, Triangle tri, out float u, out float v, out float t) {
+    vec3 edge1 = tri.vertex[1] - tri.vertex[0];
+    vec3 edge2 = tri.vertex[2] - tri.vertex[0];
+    
+    vec3 ray_cross_e2 = cross(ray.dir, edge2);
+    float det = dot(edge1, ray_cross_e2);
+
+    // If determinant is near zero, ray is parallel to triangle plane
+    if (det > -EPSILON && det < EPSILON) {
+        return false;
+    }
+
+    float inv_det = 1.0 / det;
+    vec3 s = ray.origin - tri.vertex[0];
+    
+    // Calculate U parameter and test bounds
+    u = inv_det * dot(s, ray_cross_e2);
+    if (u < 0.0 || u > 1.0) {
+        return false;
+    }
+
+    vec3 s_cross_e1 = cross(s, edge1);
+    
+    // Calculate V parameter and test bounds
+    v = inv_det * dot(ray.dir, s_cross_e1);
+    if (v < 0.0 || u + v > 1.0) {
+        return false;
+    }
+
+    // Calculate t (distance to intersection)
+    t = inv_det * dot(edge2, s_cross_e1);
+
+    // Return true if t is greater than a small epsilon (avoids self-intersection)
+    return t > EPSILON;
+    
+    return false;
+}
+
+bool rayTriangleHit(Ray ray, Triangle tri, out RayCastHit hit_info) {
+    float u, v, t;
+    if (rayTriangleHit(ray, tri, u, v, t)) {
+        hit_info.distance = t;
+        hit_info.point = ray.origin + ray.dir * t;
+        
+        // Barycentric weights: (1 - u - v), u, v
+        float w = 1.0 - u - v;
+        
+        // Interpolate normal
+        hit_info.normal = normalize(w * tri.normal[0] + u * tri.normal[1] + v * tri.normal[2]);
+        
+        // Material
+        hit_info.material = default_material;
+        
+        return true;
+    }
+    return false;
+}
+
+bool rayCastForTriangles(Ray ray, out RayCastHit best_hit) {
+    bool found_hit = false;
+    best_hit.distance = 1e10;
+    for (int i = 0; i < num_triangles; i++) {
+        RayCastHit hit_info;
+        if (rayTriangleHit(ray, getTriangle(i), hit_info)) {
+            if (hit_info.distance < best_hit.distance) {
+                best_hit = hit_info;
+                found_hit = true;
+            }
+        }
+    }
+    return found_hit;
+}
+
+vec4 renderNormalTri(Ray ray) {
+    RayCastHit hit_info;
+    if (rayCastForTriangles(ray, hit_info)) {
+        vec3 local_normal = (inverse(cam.transform) * vec4(hit_info.normal, 0.0)).xyz;
+        vec3 normal_color = local_normal * 0.5 + 0.5; // remap (-1, 1) to (0, 1)
+        return vec4(normal_color, 1.0);
+    } else {
+        return vec4(0.0); // black
+    }
 }
 
 Ray getPrimaryRay(ivec2 pixel_id, ivec2 image_size, inout uint seed) {
@@ -251,16 +366,17 @@ void main() {
     Ray ray = getPrimaryRay(pixel_id, dims, seed);
     
     // vec4 pixel = renderNormal(ray);
+    vec4 pixel = renderNormalTri(ray);
     // vec4 pixel = renderDepth(ray);
     // vec4 pixel = renderBaseColor(ray);
     // vec4 pixel = testRandom(ray);
-    vec4 pixel = vec4(0);
-    for (int i = 0; i < params.spp; i++) {
-        pixel += rayTrace(ray, seed);
-    }
+    // vec4 pixel = vec4(0);
+    // for (int i = 0; i < params.spp; i++) {
+    //     pixel += rayTrace(ray, seed);
+    // }
 
-    int total_samples = params.spp + params.cumulative_spp;
-    pixel = (pixel + params.cumulative_spp * prev_pixel) / total_samples;
+    // int total_samples = params.spp + params.cumulative_spp;
+    // pixel = (pixel + params.cumulative_spp * prev_pixel) / total_samples;
 
     // Write to texture
     imageStore(img_output, pixel_id, pixel);
