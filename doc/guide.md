@@ -51,39 +51,110 @@ flowchart TD
 
 ## Program Architecture
 
+### Overview
+
+```mermaid
+graph LR
+    subgraph Cpp ["C++ Application (CPU)"]
+        direction TB
+        Main[main.cpp]
+        RT[RayTracer]
+        S[Scene]
+        Cam[Camera]
+        
+        Main -->|Manages| RT
+        Main -->|Manages| S
+        S -->|Composes| Cam
+    end
+
+    subgraph Gpu ["GPU Resources (VRAM)"]
+        direction TB
+        UBOP[Parameter Buffer: GL_UNIFORM_BUFFER]
+        UBOC[Camera Buffer: GL_UNIFORM_BUFFER]
+        SSBOS[Sphere Buffer: GL_SHADER_STORAGE_BUFFER]
+        Tex[Accumulation Textures: Double Buffered]
+        FBO[Rescale Framebuffer: FBO]
+    end
+
+    Cam -.-> |Uploads CameraData| UBOC
+    S -.-> |Uploads Spheres| SSBOS
+    RT -.-> |Uploads RenderParams| UBOP
+    RT -.-> |Dispatches Compute to| Tex
+    RT -.-> |Blits Final Render| FBO
+    CS[Compute Shader]
+    Tex <-.->|Read/Write| CS
+    UBOC -.-> |Reads| CS
+    SSBOS -.-> |Reads| CS
+    UBOP -.-> |Reads| CS
+
+    style Cpp fill:#bbf,stroke:#333,stroke-width:0px
+    style Gpu fill:#d9b,stroke:#333,stroke-width:0px
+    style Tex fill:#dfd,stroke:#333,stroke-width:1px
+```
+
 ### C++ Side
 
 ```mermaid
 classDiagram
     class RayTracer {
         -GLuint computeProgram
-        -GLuint textureOutput
+        -GLint workGroupSize[3]
+        -GLuint textures[2]
+        -int currentTexture
         -GLuint fboRescale
-        +dispatchCompute(float time)
-        +displayScreen()
-        +setWindowSize(int w, int h)
+        -int windowWidth
+        -int windowHeight
+        -GLuint uboParameters
+        -RenderParameters parameters
+        -int max_samples
+        -initTexture() void
+        -initParameterBuffer() void
+        -sendRenderParameters(float time) void
+        +RayTracer(const string &filePath)
+        +RayTracer(const string &filePath, const int windowWidth, const int windowHeight)
+        +dispatchCompute(float time) int
+        +setWindowSize(int width, int height) RayTracer*
+        +displayScreen() void
+        +ResetRenderSpp() void
         +getShaderProgram() GLuint
+    }
+
+    class RenderParameters {
+        +float time
+        +int samplePerPixel
+        +int cumulative_samples
     }
 
     class Scene {
         -Camera camera
-        +moveCamera(vec3 direction)
-        +rotateCamera(vec2 yawpitch)
-        +setCameraAspectRatio(int w, int h)
-        +sendData()
+        -GLuint sphereSsbo
+        -spawnSpheres() void
+        +Scene(const GLuint shaderProgram)
+        +setCameraAspectRatio(int w, int h) void
+        +moveCamera(vec3 direction) void
+        +rotateCamera(vec2 yawPitch) void
+        +sendData() void
     }
 
     class Camera {
         -CameraData camData
         -GLuint uboCamera
-        +move(vec3 input)
-        +rotate(vec2 input)
-        +setAspect(int w, int h)
-        +sendCameraData()
+        -vec3 position
+        -quat orientation
+        -vec3 front
+        -vec3 right
+        -vec3 up
+        -float movementSpeed
+        -float rotationSpeed
+        -updateTransformMatrix() void
+        +Camera(const GLuint shaderProgram)
+        +setAspect(int w, int h) void
+        +move(vec3 input) void
+        +rotate(vec2 input) void
+        +sendCameraData() void
     }
 
     class CameraData {
-        <<struct>>
         +float nearClippingPlane
         +float farClippingPlane
         +float FoV
@@ -91,14 +162,29 @@ classDiagram
         +mat4 transform
     }
 
-    class ShaderLoader {
-        <<utility>>
-        +initComputeShader(string file) GLuint
+    class Material {
+        +vec4 color
+        +vec3 emission_color
+        +float emission_strength
+        +Material()
+        +Material(vec4 color)
+        +Material(vec4 color, vec3 emission_color, float emission_strength)
     }
 
-    RayTracer ..> ShaderLoader : uses
+    class Sphere {
+        +vec3 center
+        +float radius
+        +Material material
+        +Sphere()
+        +Sphere(vec3 center, float radius, Material material)
+    }
+
+    RayTracer *-- RenderParameters : composition
     Scene *-- Camera : composition
     Camera *-- CameraData : composition
+    Scene ..> RayTracer : gets shaderProgram from
+    Scene ..> Sphere : spawns
+    Sphere *-- Material : composition
 ```
 
 ### Shader Side
@@ -129,15 +215,14 @@ graph LR
         Main --> Output
     end
 
-    CB -.- GPR
-    SB -.- RCFS
+    CB -.-> |Read Access| GPR
+    SB -.-> |Read Access| RCFS
     GPR -.-> Main
     RCFS -.-> Main
     
     style Buffers fill:#d9b,stroke:#333,stroke-width:0px
     style Shader fill:#bbf,stroke:#333,stroke-width:0px
     style Output fill:#dfd,stroke:#333,stroke-width:1px
-    linkStyle 4,5 stroke:#999,stroke-width:2px;
 ```
 
 The shader architecture follows a standard ray tracing pipeline:
