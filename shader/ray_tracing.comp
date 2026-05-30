@@ -29,16 +29,16 @@ struct Sphere
 
 struct Model
 {
-    mat4 matrix;
-    int start;
-    int length;
+    mat4 matrix; // transform matrix
+    int start; // the index of the beginning of triangles 
+    int num_faces; // how many triangles does this model have
 };
 
 struct Triangle
 {
-    vec3 vertex[3];
-    vec3 normal[3];
-    vec3 uv[3];
+    vec4 vertex[3];
+    vec4 normal[3];
+    vec4 uv[3];
 };
 
 struct Ray
@@ -79,22 +79,17 @@ layout(std430, binding=2) buffer SphereBuffer {
     Sphere spheres[]; // alignment: 16
 };
 
-Triangle getTriangle(int i) {
-    if (i == 0) {
-        return Triangle(
-            vec3[3](vec3(-1.0, -1.0, -5.0), vec3(1.0, -1.0, -5.0), vec3(0.0, 1.0, -5.0)),
-            vec3[3](vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, 1.0), vec3(0.0, 0.0, 1.0)),
-            vec3[3](vec3(0.0, 0.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.5, 1.0, 0.0))
-        );
-    } else if (i == 1) {
-        return Triangle(
-            vec3[3](vec3(2.0, 2.0, -10.0), vec3(2.0, 5.0, -8.0), vec3(5.0, 3.0, -7.0)),
-            vec3[3](vec3(1.0, 1.0, 1.0), vec3(3.0, 0.0, 1.0), vec3(0.0, 3.0, 1.0)),
-            vec3[3](vec3(0.0, 0.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.5, 1.0, 0.0))
-        );
-    }
-}
-const int num_triangles = 2;
+layout(std430, binding=3) buffer ModelBuffer {
+    int num_models;
+    // int _padding[3];
+    Model models[]; // alignment: 16
+};
+
+layout(std430, binding=4) buffer TriangleBuffer {
+    int num_triangles;
+    // int _padding[3];
+    Triangle triangles[]; // alignment: 16
+};
 
 /* ---Random Number Generator--- */
 
@@ -179,8 +174,8 @@ bool rayCastForSphere(Ray ray, out RayCastHit best_hit) {
 }
 
 bool rayTriangleHit(Ray ray, Triangle tri, out float u, out float v, out float t) {
-    vec3 edge1 = tri.vertex[1] - tri.vertex[0];
-    vec3 edge2 = tri.vertex[2] - tri.vertex[0];
+    vec3 edge1 = tri.vertex[1].xyz - tri.vertex[0].xyz;
+    vec3 edge2 = tri.vertex[2].xyz - tri.vertex[0].xyz;
     
     vec3 ray_cross_e2 = cross(ray.dir, edge2);
     float det = dot(edge1, ray_cross_e2);
@@ -191,7 +186,7 @@ bool rayTriangleHit(Ray ray, Triangle tri, out float u, out float v, out float t
     }
 
     float inv_det = 1.0 / det;
-    vec3 s = ray.origin - tri.vertex[0];
+    vec3 s = ray.origin - tri.vertex[0].xyz;
     
     // Calculate U parameter and test bounds
     u = inv_det * dot(s, ray_cross_e2);
@@ -226,7 +221,7 @@ bool rayTriangleHit(Ray ray, Triangle tri, out RayCastHit hit_info) {
         float w = 1.0 - u - v;
         
         // Interpolate normal
-        hit_info.normal = normalize(w * tri.normal[0] + u * tri.normal[1] + v * tri.normal[2]);
+        hit_info.normal = normalize(w * tri.normal[0].xyz + u * tri.normal[1].xyz + v * tri.normal[2].xyz);
         
         // Material
         hit_info.material = default_material;
@@ -236,30 +231,35 @@ bool rayTriangleHit(Ray ray, Triangle tri, out RayCastHit hit_info) {
     return false;
 }
 
-bool rayCastForTriangles(Ray ray, out RayCastHit best_hit) {
+bool rayCastForModel(Ray ray, out RayCastHit best_hit) {
     bool found_hit = false;
     best_hit.distance = 1e10;
-    for (int i = 0; i < num_triangles; i++) {
-        RayCastHit hit_info;
-        if (rayTriangleHit(ray, getTriangle(i), hit_info)) {
-            if (hit_info.distance < best_hit.distance) {
-                best_hit = hit_info;
-                found_hit = true;
+    RayCastHit hit_info;
+
+    // Loop over each model
+    for (int i = 0; i < num_models; i++) {
+        mat4 local2world = models[i].matrix;
+        int end = models[i].start + models[i].num_faces;
+        // Loop over each triangle
+        for (int j = models[i].start; j < end; j++) {
+            // Transform position and normal to the world space
+            vec4 vertices[3] = triangles[j].vertex;
+            vec4 normals[3] = triangles[j].normal;
+            for (int k = 0; k < 3; k++) {
+                vertices[k] = local2world * vertices[k];
+                normals[k] = local2world * normals[k];
+            }
+            
+            Triangle tri = Triangle(vertices, normals, triangles[j].uv);
+            if (rayTriangleHit(ray, tri, hit_info)) {
+                if (hit_info.distance < best_hit.distance) {
+                    best_hit = hit_info;
+                    found_hit = true;
+                }
             }
         }
     }
     return found_hit;
-}
-
-vec4 renderNormalTri(Ray ray) {
-    RayCastHit hit_info;
-    if (rayCastForTriangles(ray, hit_info)) {
-        vec3 local_normal = (inverse(cam.transform) * vec4(hit_info.normal, 0.0)).xyz;
-        vec3 normal_color = local_normal * 0.5 + 0.5; // remap (-1, 1) to (0, 1)
-        return vec4(normal_color, 1.0);
-    } else {
-        return vec4(0.0); // black
-    }
 }
 
 Ray getPrimaryRay(ivec2 pixel_id, ivec2 image_size, inout uint seed) {
@@ -284,7 +284,7 @@ Ray getPrimaryRay(ivec2 pixel_id, ivec2 image_size, inout uint seed) {
 
 vec4 renderDepth(Ray ray) {
     RayCastHit hit_info;
-    if (rayCastForSphere(ray, hit_info)) {
+    if (rayCastForModel(ray, hit_info)) {
         float local_z = 1 + (inverse(cam.transform) * vec4(hit_info.point, 1.0)).z / 8.0;
         return vec4(local_z, local_z, local_z, 1.0);
     } else {
@@ -294,7 +294,7 @@ vec4 renderDepth(Ray ray) {
 
 vec4 renderNormal(Ray ray) {
     RayCastHit hit_info;
-    if (rayCastForSphere(ray, hit_info)) {
+    if (rayCastForModel(ray, hit_info)) {
         vec3 local_normal = (inverse(cam.transform) * vec4(hit_info.normal, 0.0)).xyz;
         vec3 normal_color = local_normal * 0.5 + 0.5; // remap (-1, 1) to (0, 1)
         return vec4(normal_color, 1.0);
@@ -305,7 +305,7 @@ vec4 renderNormal(Ray ray) {
 
 vec4 renderBaseColor(Ray ray) {
     RayCastHit hit_info;
-    if (rayCastForSphere(ray, hit_info)) {
+    if (rayCastForModel(ray, hit_info)) {
         return hit_info.material.color;
     } else {
         return vec4(0.0); // black
@@ -365,8 +365,7 @@ void main() {
     vec4 prev_pixel = imageLoad(img_previous, pixel_id);
     Ray ray = getPrimaryRay(pixel_id, dims, seed);
     
-    // vec4 pixel = renderNormal(ray);
-    vec4 pixel = renderNormalTri(ray);
+    vec4 pixel = renderNormal(ray);
     // vec4 pixel = renderDepth(ray);
     // vec4 pixel = renderBaseColor(ray);
     // vec4 pixel = testRandom(ray);

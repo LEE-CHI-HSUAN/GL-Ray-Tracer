@@ -169,6 +169,35 @@ int main(int argc, char **argv)
     rayTracer = std::make_unique<RayTracer>("shader/ray_tracing.comp"s, RT_DEFAULT_WIDTH, RT_DEFAULT_HEIGHT);
     scene = std::make_unique<Scene>(rayTracer->getShaderProgram());
 
+    scene->createModel(
+        "asset/models/cube.obj"s,
+        glm::vec3(0, 0, -7),
+        glm::vec3(38, -23, 14),
+        glm::vec3(1, 1, 1)
+    );
+
+    scene->createModel(
+        "asset/models/cube_s.obj"s,
+        glm::vec3(-4, 2, -11),
+        glm::vec3(0, 0, 0),
+        glm::vec3(1, 1, 1)
+    );
+
+    scene->createModel(
+        "asset/models/monkey.obj"s,
+        glm::vec3(-4, -2, -6),
+        glm::vec3(0, 0, 0),
+        glm::vec3(1, 1, 1)
+    );
+
+    scene->createModel(
+        "asset/models/monkey_s.obj"s,
+        glm::vec3(3, -3, -11),
+        glm::vec3(38, -23, 14),
+        glm::vec3(1, 1, 1)
+    );
+
+
     // register events
     glutKeyboardFunc(onKeyboard);
     glutSpecialFunc(onSpecialKeyboard);

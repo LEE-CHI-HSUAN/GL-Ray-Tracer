@@ -53,3 +53,26 @@ struct alignas(16) Sphere
           radius(radius),
           material(material) {}
 };
+
+/**
+ * @struct Model
+ * @brief Data structure for model parameters.
+ */
+struct alignas(16) Model
+{
+    glm::mat4 transform = glm::mat4(1.0f);
+    int32_t start = 0;
+    int32_t num_faces = 0;
+    int32_t padding[2] = {0, 0};
+};
+
+/**
+ * @struct Triangle
+ * @brief Data structure for triangle parameters.
+ */
+struct alignas(16) Triangle
+{
+    glm::vec4 vertex[3];
+    glm::vec4 normal[3];
+    glm::vec4 uv[3];
+};
