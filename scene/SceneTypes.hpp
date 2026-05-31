@@ -55,12 +55,25 @@ struct alignas(16) Sphere
 };
 
 /**
+ * @struct AABB
+ * @brief Axis-Aligned Bounding Box, defined by min and max coordinates.
+ */
+struct alignas(16) AABB
+{
+    glm::vec3 min = glm::vec3(0.0f);
+    float _padding1 = 0.0f;
+    glm::vec3 max = glm::vec3(0.0f);
+    float _padding2 = 0.0f;
+};
+
+/**
  * @struct Model
- * @brief Data structure for model parameters.
+ * @brief Data structure for model parameters, including AABB for optimization.
  */
 struct alignas(16) Model
 {
     glm::mat4 transform = glm::mat4(1.0f);
+    AABB boundingBox;
     int32_t start = 0;
     int32_t num_faces = 0;
     int32_t padding[2] = {0, 0};

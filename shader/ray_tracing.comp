@@ -27,11 +27,21 @@ struct Sphere
     Material material;
 };
 
+struct AABB
+{
+    vec3 min;
+    // float _padding1;
+    vec3 max;
+    // float _padding2;
+};
+
 struct Model
 {
     mat4 matrix; // transform matrix
+    AABB boundingBox;
     int start; // the index of the beginning of triangles 
     int num_faces; // how many triangles does this model have
+    // int _padding[2];
 };
 
 struct Triangle
@@ -156,6 +166,17 @@ bool raySphereHit(Ray ray, Sphere sphere, out RayCastHit hit_info) {
     return false;
 }
 
+bool rayAABBHit(Ray ray, AABB box) {
+    vec3 invDir = 1.0 / ray.dir;
+    vec3 t0 = (box.min - ray.origin) * invDir;
+    vec3 t1 = (box.max - ray.origin) * invDir;
+    vec3 tmin = min(t0, t1);
+    vec3 tmax = max(t0, t1);
+    float tNear = max(max(tmin.x, tmin.y), tmin.z);
+    float tFar = min(min(tmax.x, tmax.y), tmax.z);
+    return tFar >= tNear && tFar > 0.0;
+}
+
 bool rayCastForSphere(Ray ray, out RayCastHit best_hit) {
     // initialize best_hit with a very large distance
     bool found_hit = false;
@@ -234,24 +255,28 @@ bool rayTriangleHit(Ray ray, Triangle tri, out RayCastHit hit_info) {
 bool rayCastForModel(Ray ray, out RayCastHit best_hit) {
     bool found_hit = false;
     best_hit.distance = 1e10;
-    RayCastHit hit_info;
 
     // Loop over each model
     for (int i = 0; i < num_models; i++) {
+        // Transform ray to local space to use AABB efficiently
+        mat4 world2local = inverse(models[i].matrix);
+        Ray localRay;
+        localRay.origin = (world2local * vec4(ray.origin, 1.0)).xyz;
+        localRay.dir = (world2local * vec4(ray.dir, 0.0)).xyz;
+
+        if (!rayAABBHit(localRay, models[i].boundingBox))
+            continue;
+
         mat4 local2world = models[i].matrix;
         int end = models[i].start + models[i].num_faces;
         // Loop over each triangle
         for (int j = models[i].start; j < end; j++) {
-            // Transform position and normal to the world space
-            vec4 vertices[3] = triangles[j].vertex;
-            vec4 normals[3] = triangles[j].normal;
-            for (int k = 0; k < 3; k++) {
-                vertices[k] = local2world * vertices[k];
-                normals[k] = local2world * normals[k];
-            }
-            
-            Triangle tri = Triangle(vertices, normals, triangles[j].uv);
-            if (rayTriangleHit(ray, tri, hit_info)) {
+            RayCastHit hit_info;
+            if (rayTriangleHit(localRay, triangles[j], hit_info)) {
+                // Transform to world space
+                hit_info.point = (local2world * vec4(hit_info.point, 1.0)).xyz;
+                hit_info.normal = (local2world * vec4(hit_info.normal, 0.0)).xyz;
+
                 if (hit_info.distance < best_hit.distance) {
                     best_hit = hit_info;
                     found_hit = true;

@@ -110,6 +110,13 @@ public:
         model.start = triangles.size();
         model.num_faces = mesh.NF();
 
+        // Calculate AABB in local space using cyTriMesh
+        mesh.ComputeBoundingBox();
+        auto minB = mesh.GetBoundMin();
+        auto maxB = mesh.GetBoundMax();
+        model.boundingBox.min = glm::vec3(minB.x, minB.y, minB.z);
+        model.boundingBox.max = glm::vec3(maxB.x, maxB.y, maxB.z);
+
         // Calculate transformation matrix
         glm::mat4 trans = glm::mat4(1.0f);
         trans = glm::translate(trans, position);
