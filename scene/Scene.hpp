@@ -148,9 +148,9 @@ public:
                 if (mesh.HasTextureVertices()) {
                     auto ft = mesh.FT(i);
                     auto vt = mesh.VT(ft.v[j]);
-                    tri.uv[j] = glm::vec4(vt.x, vt.y, 0.0f, 0.0f);
+                    tri.uv[j] = glm::vec2(vt.x, vt.y);
                 } else {
-                    tri.uv[j] = glm::vec4(0.0f);
+                    tri.uv[j] = glm::vec2(0.0f);
                 }
             }
             triangles.push_back(tri);

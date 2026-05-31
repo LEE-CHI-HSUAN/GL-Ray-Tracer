@@ -87,5 +87,5 @@ struct alignas(16) Triangle
 {
     glm::vec4 vertex[3];
     glm::vec4 normal[3];
-    glm::vec4 uv[3];
+    glm::vec2 uv[3];
 };
