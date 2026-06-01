@@ -173,28 +173,32 @@ int main(int argc, char **argv)
         "asset/models/cube.obj"s,
         glm::vec3(0, 0, -7),
         glm::vec3(38, -23, 14),
-        glm::vec3(1, 1, 1)
+        glm::vec3(1, 1, 1),
+        Material(glm::vec4(0), glm::vec3(1.0, 1.0, 1.0), 10.0f)
     );
 
     scene->createModel(
         "asset/models/cube_s.obj"s,
         glm::vec3(-4, 2, -11),
         glm::vec3(0, 0, 0),
-        glm::vec3(1, 1, 1)
+        glm::vec3(1, 1, 1),
+        Material(glm::vec4(0.4, 0.76, 0.21, 1.0))
     );
 
     scene->createModel(
         "asset/models/monkey.obj"s,
         glm::vec3(-4, -2, -6),
         glm::vec3(0, 0, 0),
-        glm::vec3(1, 1, 1)
+        glm::vec3(1, 1, 1),
+        Material(glm::vec4(0.8, 0.21, 0.17, 1.0))
     );
 
     scene->createModel(
         "asset/models/monkey_s.obj"s,
         glm::vec3(3, -3, -11),
         glm::vec3(38, -23, 14),
-        glm::vec3(1, 1, 1)
+        glm::vec3(1, 1, 1),
+        Material(glm::vec4(0.9, 0.9, 0.9, 1.0))
     );
 
 

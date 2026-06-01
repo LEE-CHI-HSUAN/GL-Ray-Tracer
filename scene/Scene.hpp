@@ -98,7 +98,13 @@ public:
      * @param rotation Rotation angles for the model.
      * @param scale Scaling factors for the model.
      */
-    void createModel(const std::string& filename, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale)
+    void createModel(
+        const std::string& filename,
+        glm::vec3 position,
+        glm::vec3 rotation, 
+        glm::vec3 scale,
+        Material material
+    )
     {
         cy::TriMesh mesh;
         if (!mesh.LoadFromFileObj(filename.c_str())) {
@@ -109,6 +115,7 @@ public:
         Model model;
         model.start = triangles.size();
         model.num_faces = mesh.NF();
+        model.material = material;
 
         // Calculate AABB in local space using cyTriMesh
         mesh.ComputeBoundingBox();

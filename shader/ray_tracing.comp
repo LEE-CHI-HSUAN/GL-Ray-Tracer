@@ -42,6 +42,7 @@ struct Model
     int start; // the index of the beginning of triangles 
     int num_faces; // how many triangles does this model have
     // int _padding[2];
+    Material material;
 };
 
 struct Triangle
@@ -246,9 +247,6 @@ bool rayTriangleHit(Ray ray, Triangle tri, out RayCastHit hit_info) {
         hit_info.normal = normalize(w * tri.normal[0].xyz + u * tri.normal[1].xyz + v * tri.normal[2].xyz);
         hit_info.uv = w * tri.uv[0] + u * tri.uv[1] + v * tri.uv[2];
         
-        // Material
-        hit_info.material = default_material;
-        
         return true;
     }
     return false;
@@ -281,6 +279,7 @@ bool rayCastForModel(Ray ray, out RayCastHit best_hit) {
 
                 if (hit_info.distance < best_hit.distance) {
                     best_hit = hit_info;
+                    best_hit.material = models[i].material;
                     found_hit = true;
                 }
             }
@@ -365,7 +364,7 @@ vec4 rayTrace(Ray ray, inout uint seed) {
 
     for (int i = 0; i <= MAX_BOUNCE_TIMES; i++) {
         RayCastHit hit_info;
-        if (rayCastForSphere(ray, hit_info)) {
+        if (rayCastForModel(ray, hit_info)) {
             // reflection ray
             // ray.dir = reflect(ray.dir, hit_info.normal);
             // cosine weighted sampling
@@ -402,17 +401,17 @@ void main() {
     Ray ray = getPrimaryRay(pixel_id, dims, seed);
     
     // vec4 pixel = renderNormal(ray);
-    vec4 pixel = renderUV(ray);
+    // vec4 pixel = renderUV(ray);
     // vec4 pixel = renderDepth(ray);
     // vec4 pixel = renderBaseColor(ray);
     // vec4 pixel = testRandom(ray);
-    // vec4 pixel = vec4(0);
-    // for (int i = 0; i < params.spp; i++) {
-    //     pixel += rayTrace(ray, seed);
-    // }
+    vec4 pixel = vec4(0);
+    for (int i = 0; i < params.spp; i++) {
+        pixel += rayTrace(ray, seed);
+    }
 
-    // int total_samples = params.spp + params.cumulative_spp;
-    // pixel = (pixel + params.cumulative_spp * prev_pixel) / total_samples;
+    int total_samples = params.spp + params.cumulative_spp;
+    pixel = (pixel + params.cumulative_spp * prev_pixel) / total_samples;
 
     // Write to texture
     imageStore(img_output, pixel_id, pixel);

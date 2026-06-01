@@ -23,7 +23,7 @@ struct CameraData
  * @struct Material
  * @brief Data structure for Material parameters.
  */
-struct Material
+struct alignas(16) Material
 {
     glm::vec4 color = glm::vec4(1.0f);
     glm::vec3 emission_color = glm::vec4(0.0f);
@@ -63,7 +63,7 @@ struct alignas(16) AABB
     glm::vec3 min = glm::vec3(0.0f);
     float _padding1 = 0.0f;
     glm::vec3 max = glm::vec3(0.0f);
-    float _padding2 = 0.0f;
+    // float _padding2 = 0.0f;
 };
 
 /**
@@ -76,7 +76,8 @@ struct alignas(16) Model
     AABB boundingBox;
     int32_t start = 0;
     int32_t num_faces = 0;
-    int32_t padding[2] = {0, 0};
+    // int32_t padding[2] = {0, 0};
+    Material material;
 };
 
 /**
