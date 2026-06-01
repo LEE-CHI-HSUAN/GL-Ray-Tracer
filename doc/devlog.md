@@ -17,7 +17,7 @@ The direction of rays are finally acquired by subtraction and normalization. Ray
 
 |      |      |      |
 | ---- | ---- | ---- |
-| ![pixel](../asset/pixelpos.png) | ![pixel](../asset/pixelposcenter.png) | ![pixel](../asset/rays.png) |
+| ![pixel](../asset/images/pixelpos.png) | ![pixel](../asset/images/pixelposcenter.png) | ![pixel](../asset/images/rays.png) |
 
 ## Sphere primitive calculation
 
@@ -42,7 +42,7 @@ With the basic intersection detection algorithm, I am able to find the point and
 
 |     |     |
 | --- | --- |
-| ![](../asset/ballsnormal.png) | ![](../asset/ballsdepth.png) |
+| ![](../asset/images/ballsnormal.png) | ![](../asset/images/ballsdepth.png) |
 
 ### Side Track: Moving Camera
 
@@ -61,7 +61,7 @@ $$
 \text{reflect\_dir} = \text{ray\_dir} - 2 \cdot \text{normal} \cdot \text{ray\_dir}
 $$
 
-![](../asset/reflect_illustration.png)
+![](../asset/images/reflect_illustration.png)
 
 When a ray hits a surface, we multiply its color with the surface color to accumulate the influence along the path. When it hits a light source, we multiply ray color, light color, and light strength and add to the pixel color.
 
@@ -69,7 +69,7 @@ I placed 4 spheres in the scene, one of which is emissive, acting as a main ligh
 
 | #reflection=1 | #reflection=2 | #reflection=5 |
 | --- | --- | --- |
-| ![](../asset/r1.png) | ![](../asset/r2.png) | ![](../asset/r5.png) |
+| ![](../asset/images/r1.png) | ![](../asset/images/r2.png) | ![](../asset/images/r5.png) |
 
 ## Diffuse Reflection
 
@@ -92,7 +92,7 @@ I ultimately adopt a formula that samples and rescales 2 floats to get the polar
 
 | More points on the edges | Even distribution  |
 | --- | --- |
-| ![](../asset/sampledir1.png) | ![](../asset/sampledir2.png) |
+| ![](../asset/images/sampledir1.png) | ![](../asset/images/sampledir2.png) |
 
 Finally, the goal is to generate directions on a hemisphere, however, the previous method generate points on a sphere. To fix it, we can examine whether a direction points outward by taking dot product, and flip the sign of the direction if it is negative.
 
@@ -100,13 +100,40 @@ Finally, the goal is to generate directions on a hemisphere, however, the previo
 
 This is the result of the diffuse reflection. It looks terrible. Unlike smooth surface where lights travel along the same direction, diffuse reflection scatter rays stochastically.
 
-![](../asset/scatter1.png)
+![](../asset/images/scatter1.png)
 
 According to the rendering equation, I need to sample an innumerable amount of rays to approximate the integration of incoming light. But in practice, I need to set a limit to the number of sample per pixel.
 
 As the number of samples increases, the chaotic noise gradually yields to a clearer image, converging toward the true light transport. Observe how the stochastic artifacts diminish with higher sampling densities:
 
-| 4 samples | 16 samples | 196 samples |
-| --- | --- | --- |
-| ![](../asset/scatter4.png) | ![](../asset/scatter16.png) | ![](../asset/scatter196.png) |
+| 4 samples | 16 samples |
+| --- | --- |
+| ![](../asset/images/scatter4.png) | ![](../asset/images/scatter16.png) |
+| 196 samples | 10000 samples |
+| ![](../asset/images/scatter196.png) | ![](../asset/images/scatter10000.png) |
 
+Despite the simple scene and geometry, it takes 58 ms to compute 100 samples per frame on my computer, which is roughly 17.2 FPS, and the image is far from satisfying with merely 100 samples. Althought we can spend more time to collect more samples to improve the image quality, full ray tracing can hardly be applied in real-time rendering. On the other hand, the inefficency of the current stochastic sampling method.
+
+## Rendering Mesh
+
+The previous works to rendering sphere have scaffolded my ray tracing framework. Now I can proceed to render more complex shape after introducing mesh data.
+
+### Data structure
+
+model array
+triangle array store 
+
+Brutal force, loop over every model and every triangle, test ray triangle interaction.
+
+Frame time: 1933 ms
+Scene triangle count: 1960
+
+![](../asset/images/rendermesh.jpg)
+
+### optimization: AABB
+
+Frame time: 244 ms
+
+## Mixed Specular and Diffuse Reflection
+
+![](../asset/images/specular0.png)

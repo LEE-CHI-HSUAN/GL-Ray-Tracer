@@ -411,6 +411,7 @@ void main() {
     for (int i = 0; i < params.spp; i++) {
         pixel += rayTrace(ray, seed);
     }
+    pixel = clamp(pixel, vec4(0), vec4(params.spp));
 
     int total_samples = params.spp + params.cumulative_spp;
     pixel = (pixel + params.cumulative_spp * prev_pixel) / total_samples;

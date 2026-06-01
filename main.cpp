@@ -121,7 +121,17 @@ void idle()
  */
 void display()
 {
-    std::cout << '.'; // DEBUG
+    static int lastTime = glutGet(GLUT_ELAPSED_TIME);
+    static float smoothedFrameTime = 0.0f;
+    const float alpha = 0.1f; // Smoothing factor
+
+    // Metric
+    int currentTime = glutGet(GLUT_ELAPSED_TIME);
+    float frameTime = currentTime - lastTime;
+    lastTime = currentTime;
+    smoothedFrameTime = alpha * frameTime + (1.0f - alpha) * smoothedFrameTime;
+    std::cout << smoothedFrameTime << ',';
+
     rayTracer->displayScreen();
     glutSwapBuffers();
 }
@@ -178,7 +188,7 @@ int main(int argc, char **argv)
     );
 
     scene->createModel(
-        "asset/models/cube_s.obj"s,
+        "asset/models/cube.obj"s,
         glm::vec3(-4, 2, -11),
         glm::vec3(0, 0, 0),
         glm::vec3(1, 1, 1),
@@ -195,7 +205,7 @@ int main(int argc, char **argv)
 
     scene->createModel(
         "asset/models/monkey_s.obj"s,
-        glm::vec3(3, -3, -11),
+        glm::vec3(4, 0, -11),
         glm::vec3(38, -23, 14),
         glm::vec3(1, 1, 1),
         Material{.color = glm::vec4(0.9, 0.9, 0.9, 1.0), .roughness = 0.5}
