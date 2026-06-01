@@ -174,7 +174,7 @@ int main(int argc, char **argv)
         glm::vec3(0, 0, -7),
         glm::vec3(38, -23, 14),
         glm::vec3(1, 1, 1),
-        Material(glm::vec4(0), glm::vec3(1.0, 1.0, 1.0), 10.0f)
+        Material{.color = glm::vec4(0), .emission_color = glm::vec3(1.0, 1.0, 1.0), .emission_strength = 10.0f}
     );
 
     scene->createModel(
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
         glm::vec3(-4, 2, -11),
         glm::vec3(0, 0, 0),
         glm::vec3(1, 1, 1),
-        Material(glm::vec4(0.4, 0.76, 0.21, 1.0))
+        Material{.color = glm::vec4(0.4, 0.76, 0.21, 1.0), .roughness = 0.7}
     );
 
     scene->createModel(
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
         glm::vec3(-4, -2, -6),
         glm::vec3(0, 0, 0),
         glm::vec3(1, 1, 1),
-        Material(glm::vec4(0.8, 0.21, 0.17, 1.0))
+        Material{.color = glm::vec4(0.8, 0.21, 0.17, 1.0), .roughness = 0.2}
     );
 
     scene->createModel(
@@ -198,9 +198,8 @@ int main(int argc, char **argv)
         glm::vec3(3, -3, -11),
         glm::vec3(38, -23, 14),
         glm::vec3(1, 1, 1),
-        Material(glm::vec4(0.9, 0.9, 0.9, 1.0))
+        Material{.color = glm::vec4(0.9, 0.9, 0.9, 1.0), .roughness = 0.5}
     );
-
 
     // register events
     glutKeyboardFunc(onKeyboard);

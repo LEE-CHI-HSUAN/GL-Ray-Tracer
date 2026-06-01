@@ -72,12 +72,16 @@ graph LR
         UBOP[Parameter Buffer: GL_UNIFORM_BUFFER]
         UBOC[Camera Buffer: GL_UNIFORM_BUFFER]
         SSBOS[Sphere Buffer: GL_SHADER_STORAGE_BUFFER]
+        SSBOM[Model Buffer: GL_SHADER_STORAGE_BUFFER]
+        SSBOT[Triangle Buffer: GL_SHADER_STORAGE_BUFFER]
         Tex[Accumulation Textures: Double Buffered]
         FBO[Rescale Framebuffer: FBO]
     end
 
     Cam -.-> |Uploads CameraData| UBOC
     S -.-> |Uploads Spheres| SSBOS
+    S -.-> |Uploads Models| SSBOM
+    S -.-> |Uploads Triangles| SSBOT
     RT -.-> |Uploads RenderParams| UBOP
     RT -.-> |Dispatches Compute to| Tex
     RT -.-> |Blits Final Render| FBO
@@ -85,6 +89,8 @@ graph LR
     Tex <-.->|Read/Write| CS
     UBOC -.-> |Reads| CS
     SSBOS -.-> |Reads| CS
+    SSBOM -.-> |Reads| CS
+    SSBOT -.-> |Reads| CS
     UBOP -.-> |Reads| CS
 
     style Cpp fill:#bbf,stroke:#333,stroke-width:0px
@@ -128,8 +134,14 @@ classDiagram
     class Scene {
         -Camera camera
         -GLuint sphereSsbo
+        -GLuint modelSsbo
+        -GLuint triangleSsbo
+        -vector~Triangle~ triangles
+        -vector~Model~ models
         -spawnSpheres() void
+        -uploadBuffers() void
         +Scene(const GLuint shaderProgram)
+        +createModel(string filename, vec3 pos, vec3 rot, vec3 scale, Material mat) void
         +setCameraAspectRatio(int w, int h) void
         +moveCamera(vec3 direction) void
         +rotateCamera(vec2 yawPitch) void
@@ -166,9 +178,7 @@ classDiagram
         +vec4 color
         +vec3 emission_color
         +float emission_strength
-        +Material()
-        +Material(vec4 color)
-        +Material(vec4 color, vec3 emission_color, float emission_strength)
+        +float roughness
     }
 
     class Sphere {
@@ -179,12 +189,35 @@ classDiagram
         +Sphere(vec3 center, float radius, Material material)
     }
 
+    class AABB {
+        +vec3 min
+        +vec3 max
+    }
+
+    class Model {
+        +mat4 transform
+        +AABB boundingBox
+        +int32_t start
+        +int32_t num_faces
+        +Material material
+    }
+
+    class Triangle {
+        +vec4 vertex[3]
+        +vec4 normal[3]
+        +vec2 uv[3]
+    }
+
     RayTracer *-- RenderParameters : composition
     Scene *-- Camera : composition
     Camera *-- CameraData : composition
     Scene ..> RayTracer : gets shaderProgram from
     Scene ..> Sphere : spawns
+    Scene ..> Model : manages
+    Scene ..> Triangle : manages
     Sphere *-- Material : composition
+    Model *-- Material : composition
+    Model *-- AABB : composition
 ```
 
 ### Shader Side
@@ -199,6 +232,8 @@ graph LR
     subgraph Buffers ["Data Buffers (CPU to GPU)"]
         CB[CameraBlock: Uniform Buffer]
         SB[SphereBuffer: Shader Storage Buffer]
+        MB[ModelBuffer: Shader Storage Buffer]
+        TB[TriangleBuffer: Shader Storage Buffer]
     end
 
     subgraph Shader ["Ray Tracing Shader (compute.glsl / ray_tracing.glsl)"]
@@ -208,17 +243,26 @@ graph LR
         RCFS[rayCastForSphere]
         RSH[raySphereHit]
         Output[(img_output: image2D)]
+        RCFM[rayCastForModel]
+        RTH[rayTriangleHit]
+        
 
         Main --> GPR
         Main --> RCFS
         RCFS --> RSH
+        Main --> RCFM
+        RCFM --> RTH
         Main --> Output
     end
 
     CB -.-> |Read Access| GPR
     SB -.-> |Read Access| RCFS
+    MB -.-> |Read Access| RCFM
+    TB -.-> |Read Access| RTH
     GPR -.-> Main
     RCFS -.-> Main
+    RCFM -.-> Main
+    RTH -.-> RCFM
     
     style Buffers fill:#d9b,stroke:#333,stroke-width:0px
     style Shader fill:#bbf,stroke:#333,stroke-width:0px
@@ -229,7 +273,8 @@ The shader architecture follows a standard ray tracing pipeline:
 1.  **Entry Point (`main`)**: Orchestrates the ray tracing process for each pixel.
 2.  **Ray Generation (`getPrimaryRay`)**: Uses `CameraBlock` uniform data to transform pixel coordinates into world-space rays.
 3.  **Intersection Logic (`rayCastForSphere` & `raySphereHit`)**: Iterates through the `SphereBuffer` to find the closest intersection point.
-4.  **Output**: Stores the resulting color (e.g., normal mapping or depth) into the `img_output` texture.
+4.  **Model Intersection (`rayCastForModel` & `rayTriangleHit`)**: Iterates through the `ModelBuffer` and `TriangleBuffer` to handle mesh geometry intersections using AABB acceleration.
+5.  **Output**: Stores the resulting color (e.g., normal mapping or depth) into the `img_output` texture.
 
 # References
 

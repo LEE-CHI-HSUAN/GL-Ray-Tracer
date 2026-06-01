@@ -26,15 +26,9 @@ struct CameraData
 struct alignas(16) Material
 {
     glm::vec4 color = glm::vec4(1.0f);
-    glm::vec3 emission_color = glm::vec4(0.0f);
+    glm::vec3 emission_color = glm::vec3(0.0f);
     float emission_strength = 0.0f;
-
-    Material() = default;
-    Material(glm::vec4 color) : color(color) {}
-    Material(glm::vec4 color, glm::vec3 emission_color, float emission_strength)
-        : color(color),
-          emission_color(emission_color),
-          emission_strength(emission_strength) {}
+    float roughness = 0.2f;
 };
 
 /**
