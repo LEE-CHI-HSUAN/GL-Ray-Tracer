@@ -75,6 +75,19 @@ struct alignas(16) Model
 };
 
 /**
+ * @struct BVHNode
+ * @brief Represents a node in the Bounding Volume Hierarchy, aligned for GPU memory.
+ */
+struct alignas(16) BVHNode
+{
+    uint32_t childL;        // ID of the left child (0 if leaf)
+    uint32_t childR;        // ID of the right child (0 if leaf)
+    uint32_t elementOffset; // Offset into the elements buffer (valid only if leaf)
+    uint32_t elementNum;    // Number of elements in this node (valid only if leaf)
+    AABB boundingBox;       // Bounding box of this node
+};
+
+/**
  * @struct Triangle
  * @brief Data structure for triangle parameters.
  */
