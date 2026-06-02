@@ -67,9 +67,8 @@ struct alignas(16) AABB
 struct alignas(16) Model
 {
     glm::mat4 transform = glm::mat4(1.0f);
-    AABB boundingBox;
-    int32_t start = 0;
-    int32_t num_faces = 0;
+    int32_t nodeOffset;
+    int32_t triangleOffset;
     // int32_t padding[2] = {0, 0};
     Material material;
 };

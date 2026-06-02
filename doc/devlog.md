@@ -137,3 +137,10 @@ Frame time: 244 ms
 ## Mixed Specular and Diffuse Reflection
 
 ![](../asset/images/specular0.png)
+![](../asset/images/specular1.jpg)
+
+## BVH
+
+![](../asset/images/bvhbox.jpg)
+
+frame time: 99 ms

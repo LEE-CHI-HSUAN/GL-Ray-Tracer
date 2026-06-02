@@ -21,24 +21,25 @@ class Scene
 {
 private:
     /**
-     * @struct ModelCacheData
-     * @brief Caches model data to avoid redundant loading.
+     * @struct MeshReference
+     * @brief References mesh data to avoid redundant loading.
      */
-    struct ModelCacheData
+    struct MeshReference
     {
-        int start;
-        int num_faces;
-        AABB boundingBox;
+        int nodeOffset;
+        int triangleOffset;
     };
 
     Camera camera;       // The camera used to view the scene
     GLuint sphereSsbo;   // Sphere data buffer
     GLuint modelSsbo;    // Model data buffer
+    GLuint nodeSsbo;     // BVH node data buffer
     GLuint triangleSsbo; // Triangle data buffer
 
-    std::vector<Triangle> triangles;
-    std::vector<Model> models;
-    std::unordered_map<std::string, ModelCacheData> modelCache;
+    std::vector<Model> models;       // Object instances
+    std::vector<BVHNode> nodes;      // Global BVH node array
+    std::vector<Triangle> triangles; // Global triangle array
+    std::unordered_map<std::string, MeshReference> meshReferenceMap;
 
     /**
      * @brief Initializes and uploads hardcoded sphere data to the GPU.
@@ -70,7 +71,7 @@ private:
     }
 
     /**
-     * @brief Uploads model and triangle data to the GPU buffers.
+     * @brief Uploads model, BVH node, and triangle data to the GPU buffers.
      */
     void uploadBuffers()
     {
@@ -85,16 +86,19 @@ private:
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, numModels * sizeof(Model), models.data());
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, modelSsbo);
 
+        // Upload BVH nodes
+        if (nodeSsbo == 0)
+            glGenBuffers(1, &nodeSsbo);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, nodeSsbo);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, nodes.size() * sizeof(BVHNode), nodes.data(), GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, nodeSsbo);
+
         // Upload triangles
         if (triangleSsbo == 0)
             glGenBuffers(1, &triangleSsbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, triangleSsbo);
-        int bufferSizeTriangles = 16 + triangles.size() * sizeof(Triangle);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSizeTriangles, NULL, GL_STATIC_DRAW);
-        int numTriangles = triangles.size();
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int), &numTriangles);
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, numTriangles * sizeof(Triangle), triangles.data());
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, triangleSsbo);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, triangles.size() * sizeof(Triangle), triangles.data(), GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, triangleSsbo);
     }
 
 public:
@@ -121,35 +125,36 @@ public:
         glm::vec3 scale,
         Material material)
     {
-        // Check if the model is already loaded and cached
-        auto it = modelCache.find(filename);
-        bool cached = (it != modelCache.end());
+        // Check if the model is already loaded and referenced
+        auto it = meshReferenceMap.find(filename);
+        bool meshLoaded = (it != meshReferenceMap.end());
 
         Model model;
         model.material = material;
 
-        if (cached)
+        if (meshLoaded)
         {
-            // Reuse cached data
-            model.start = it->second.start;
-            model.num_faces = it->second.num_faces;
-            model.boundingBox = it->second.boundingBox;
+            // Reuse loaded data
+            model.nodeOffset = it->second.nodeOffset;
+            model.triangleOffset = it->second.triangleOffset;
         }
         else
         {
             // Load new model
             Mesh mesh;
             if (!mesh.loadFromFileObj(filename))
-            {
                 return;
-            }
 
-            model.start = triangles.size();
-            model.num_faces = mesh.triangles.size();
-            model.boundingBox = mesh.boundingBox;
+            model.nodeOffset = nodes.size();
+            model.triangleOffset = triangles.size();
 
-            // Update cache
-            modelCache[filename] = {model.start, model.num_faces, model.boundingBox};
+            // Update map
+            meshReferenceMap[filename] = {model.nodeOffset, model.triangleOffset};
+
+            // Append model's BVH nodes to the nodes array
+            nodes.insert(nodes.end(),
+                         std::make_move_iterator(mesh.nodes.begin()),
+                         std::make_move_iterator(mesh.nodes.end()));
 
             // Append model's triangles to the triangles array
             triangles.insert(triangles.end(),
