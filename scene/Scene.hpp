@@ -6,7 +6,7 @@
 #pragma once
 #include "Camera.hpp"
 #include "SceneTypes.hpp"
-#include "../cyCodeBase/cyTriMesh.h"
+#include "Mesh.hpp"
 #include "../glm/glm/gtc/matrix_transform.hpp"
 #include <vector>
 #include <iostream>
@@ -24,15 +24,16 @@ private:
      * @struct ModelCacheData
      * @brief Caches model data to avoid redundant loading.
      */
-    struct ModelCacheData {
+    struct ModelCacheData
+    {
         int start;
         int num_faces;
         AABB boundingBox;
     };
 
-    Camera camera;     // The camera used to view the scene
-    GLuint sphereSsbo; // Sphere data buffer
-    GLuint modelSsbo;  // Model data buffer
+    Camera camera;       // The camera used to view the scene
+    GLuint sphereSsbo;   // Sphere data buffer
+    GLuint modelSsbo;    // Model data buffer
     GLuint triangleSsbo; // Triangle data buffer
 
     std::vector<Triangle> triangles;
@@ -74,7 +75,8 @@ private:
     void uploadBuffers()
     {
         // Upload models
-        if (modelSsbo == 0) glGenBuffers(1, &modelSsbo);
+        if (modelSsbo == 0)
+            glGenBuffers(1, &modelSsbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelSsbo);
         int bufferSizeModels = 16 + models.size() * sizeof(Model);
         glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSizeModels, NULL, GL_STATIC_DRAW);
@@ -84,7 +86,8 @@ private:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, modelSsbo);
 
         // Upload triangles
-        if (triangleSsbo == 0) glGenBuffers(1, &triangleSsbo);
+        if (triangleSsbo == 0)
+            glGenBuffers(1, &triangleSsbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, triangleSsbo);
         int bufferSizeTriangles = 16 + triangles.size() * sizeof(Triangle);
         glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSizeTriangles, NULL, GL_STATIC_DRAW);
@@ -112,12 +115,11 @@ public:
      * @param scale Scaling factors for the model.
      */
     void createModel(
-        const std::string& filename,
+        const std::string &filename,
         glm::vec3 position,
-        glm::vec3 rotation, 
+        glm::vec3 rotation,
         glm::vec3 scale,
-        Material material
-    )
+        Material material)
     {
         // Check if the model is already loaded and cached
         auto it = modelCache.find(filename);
@@ -126,61 +128,35 @@ public:
         Model model;
         model.material = material;
 
-        if (cached) {
+        if (cached)
+        {
             // Reuse cached data
             model.start = it->second.start;
             model.num_faces = it->second.num_faces;
             model.boundingBox = it->second.boundingBox;
-        } else {
+        }
+        else
+        {
             // Load new model
-            cy::TriMesh mesh;
-            if (!mesh.LoadFromFileObj(filename.c_str())) {
-                std::cerr << "Failed to load model: " << filename << std::endl;
+            Mesh mesh;
+            if (!mesh.loadFromFileObj(filename))
+            {
                 return;
             }
 
             model.start = triangles.size();
-            model.num_faces = mesh.NF();
-
-            // Calculate AABB in local space using cyTriMesh
-            mesh.ComputeBoundingBox();
-            auto minB = mesh.GetBoundMin();
-            auto maxB = mesh.GetBoundMax();
-            model.boundingBox.min = glm::vec3(minB.x, minB.y, minB.z);
-            model.boundingBox.max = glm::vec3(maxB.x, maxB.y, maxB.z);
+            model.num_faces = mesh.triangles.size();
+            model.boundingBox = mesh.boundingBox;
 
             // Update cache
             modelCache[filename] = {model.start, model.num_faces, model.boundingBox};
 
             // Append model's triangles to the triangles array
-            for (int i = 0; i < mesh.NF(); i++) {
-                auto face = mesh.F(i);
-                Triangle tri;
-                for (int j = 0; j < 3; j++) {
-                    // Position
-                    auto v = mesh.V(face.v[j]);
-                    tri.vertex[j] = glm::vec4(v.x, v.y, v.z, 1.0f);
-                    // Normal
-                    if (mesh.HasNormals()) {
-                        auto fn = mesh.FN(i);
-                        auto vn = mesh.VN(fn.v[j]);
-                        tri.normal[j] = glm::vec4(vn.x, vn.y, vn.z, 0.0f);
-                    } else {
-                        tri.normal[j] = glm::vec4(0.0f);
-                    }
-                    // UV, aka texture coordinate
-                    if (mesh.HasTextureVertices()) {
-                        auto ft = mesh.FT(i);
-                        auto vt = mesh.VT(ft.v[j]);
-                        tri.uv[j] = glm::vec2(vt.x, vt.y);
-                    } else {
-                        tri.uv[j] = glm::vec2(0.0f);
-                    }
-                }
-                triangles.push_back(tri);
-            }
+            triangles.insert(triangles.end(),
+                             std::make_move_iterator(mesh.triangles.begin()),
+                             std::make_move_iterator(mesh.triangles.end()));
         }
-        
+
         // Calculate transformation matrix
         glm::mat4 trans = glm::mat4(1.0f);
         trans = glm::translate(trans, position);
