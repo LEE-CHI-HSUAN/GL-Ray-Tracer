@@ -10,6 +10,8 @@
 #include "../glm/glm/gtc/matrix_transform.hpp"
 #include <vector>
 #include <iostream>
+#include <unordered_map>
+#include <string>
 
 /**
  * @class Scene
@@ -18,6 +20,16 @@
 class Scene
 {
 private:
+    /**
+     * @struct ModelCacheData
+     * @brief Caches model data to avoid redundant loading.
+     */
+    struct ModelCacheData {
+        int start;
+        int num_faces;
+        AABB boundingBox;
+    };
+
     Camera camera;     // The camera used to view the scene
     GLuint sphereSsbo; // Sphere data buffer
     GLuint modelSsbo;  // Model data buffer
@@ -25,6 +37,7 @@ private:
 
     std::vector<Triangle> triangles;
     std::vector<Model> models;
+    std::unordered_map<std::string, ModelCacheData> modelCache;
 
     /**
      * @brief Initializes and uploads hardcoded sphere data to the GPU.
@@ -106,24 +119,68 @@ public:
         Material material
     )
     {
-        cy::TriMesh mesh;
-        if (!mesh.LoadFromFileObj(filename.c_str())) {
-            std::cerr << "Failed to load model: " << filename << std::endl;
-            return;
-        }
+        // Check if the model is already loaded and cached
+        auto it = modelCache.find(filename);
+        bool cached = (it != modelCache.end());
 
         Model model;
-        model.start = triangles.size();
-        model.num_faces = mesh.NF();
         model.material = material;
 
-        // Calculate AABB in local space using cyTriMesh
-        mesh.ComputeBoundingBox();
-        auto minB = mesh.GetBoundMin();
-        auto maxB = mesh.GetBoundMax();
-        model.boundingBox.min = glm::vec3(minB.x, minB.y, minB.z);
-        model.boundingBox.max = glm::vec3(maxB.x, maxB.y, maxB.z);
+        if (cached) {
+            // Reuse cached data
+            model.start = it->second.start;
+            model.num_faces = it->second.num_faces;
+            model.boundingBox = it->second.boundingBox;
+        } else {
+            // Load new model
+            cy::TriMesh mesh;
+            if (!mesh.LoadFromFileObj(filename.c_str())) {
+                std::cerr << "Failed to load model: " << filename << std::endl;
+                return;
+            }
 
+            model.start = triangles.size();
+            model.num_faces = mesh.NF();
+
+            // Calculate AABB in local space using cyTriMesh
+            mesh.ComputeBoundingBox();
+            auto minB = mesh.GetBoundMin();
+            auto maxB = mesh.GetBoundMax();
+            model.boundingBox.min = glm::vec3(minB.x, minB.y, minB.z);
+            model.boundingBox.max = glm::vec3(maxB.x, maxB.y, maxB.z);
+
+            // Update cache
+            modelCache[filename] = {model.start, model.num_faces, model.boundingBox};
+
+            // Append model's triangles to the triangles array
+            for (int i = 0; i < mesh.NF(); i++) {
+                auto face = mesh.F(i);
+                Triangle tri;
+                for (int j = 0; j < 3; j++) {
+                    // Position
+                    auto v = mesh.V(face.v[j]);
+                    tri.vertex[j] = glm::vec4(v.x, v.y, v.z, 1.0f);
+                    // Normal
+                    if (mesh.HasNormals()) {
+                        auto fn = mesh.FN(i);
+                        auto vn = mesh.VN(fn.v[j]);
+                        tri.normal[j] = glm::vec4(vn.x, vn.y, vn.z, 0.0f);
+                    } else {
+                        tri.normal[j] = glm::vec4(0.0f);
+                    }
+                    // UV, aka texture coordinate
+                    if (mesh.HasTextureVertices()) {
+                        auto ft = mesh.FT(i);
+                        auto vt = mesh.VT(ft.v[j]);
+                        tri.uv[j] = glm::vec2(vt.x, vt.y);
+                    } else {
+                        tri.uv[j] = glm::vec2(0.0f);
+                    }
+                }
+                triangles.push_back(tri);
+            }
+        }
+        
         // Calculate transformation matrix
         glm::mat4 trans = glm::mat4(1.0f);
         trans = glm::translate(trans, position);
@@ -135,33 +192,6 @@ public:
 
         models.push_back(model);
 
-        // Append model's triangles to the triangles array
-        for (int i = 0; i < mesh.NF(); i++) {
-            auto face = mesh.F(i);
-            Triangle tri;
-            for (int j = 0; j < 3; j++) {
-                // Position
-                auto v = mesh.V(face.v[j]);
-                tri.vertex[j] = glm::vec4(v.x, v.y, v.z, 1.0f);
-                // Normal
-                if (mesh.HasNormals()) {
-                    auto fn = mesh.FN(i);
-                    auto vn = mesh.VN(fn.v[j]);
-                    tri.normal[j] = glm::vec4(vn.x, vn.y, vn.z, 0.0f);
-                } else {
-                    tri.normal[j] = glm::vec4(0.0f);
-                }
-                // UV, aka texture coordinate
-                if (mesh.HasTextureVertices()) {
-                    auto ft = mesh.FT(i);
-                    auto vt = mesh.VT(ft.v[j]);
-                    tri.uv[j] = glm::vec2(vt.x, vt.y);
-                } else {
-                    tri.uv[j] = glm::vec2(0.0f);
-                }
-            }
-            triangles.push_back(tri);
-        }
         uploadBuffers();
     }
 
