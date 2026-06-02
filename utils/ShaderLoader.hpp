@@ -12,7 +12,7 @@
  * 
  * @param shader The OpenGL shader object to check.
  */
-void checkShaderCompile(GLuint shader);
+bool checkShaderCompile(GLuint shader);
 
 /**
  * @brief Reads the source code of a shader from a file.

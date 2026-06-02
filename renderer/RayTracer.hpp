@@ -34,6 +34,12 @@ private:
     int max_samples = 10000;     // Upper bound of SPP
 
     /**
+     * @brief Initializes the compute shader program.
+     * @param filePath Path to the compute shader source.
+     */
+    void initComputeShaderProgram(const std::string &filePath);
+
+    /**
      * @brief Initializes the output texture and framebuffer.
      */
     void initTexture();

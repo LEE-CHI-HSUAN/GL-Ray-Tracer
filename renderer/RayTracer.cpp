@@ -3,8 +3,20 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <string>
+#include <iostream>
+#include <cstdlib>
 
 #pragma region Private Methods
+
+void RayTracer::initComputeShaderProgram(const std::string &filePath)
+{
+    computeProgram = initComputeShader(filePath);
+    if (computeProgram == 0) {
+        std::cerr << "Failed to initialize compute shader." << std::endl;
+        exit(1);
+    }
+    glGetProgramiv(computeProgram, GL_COMPUTE_WORK_GROUP_SIZE, workGroupSize);
+}
 
 void RayTracer::initTexture()
 {
@@ -62,9 +74,7 @@ RayTracer::RayTracer(const std::string &filePath)
     windowWidth = glutGet(GLUT_WINDOW_WIDTH);
     windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
 
-    // Initialize the compute shader and retrieve its work group size
-    computeProgram = initComputeShader(filePath);
-    glGetProgramiv(computeProgram, GL_COMPUTE_WORK_GROUP_SIZE, workGroupSize);
+    initComputeShaderProgram(filePath);
     initTexture();
     initParameterBuffer();
 }
@@ -75,9 +85,7 @@ RayTracer::RayTracer(
     const int windowHeight)
     : windowWidth(windowWidth), windowHeight(windowHeight)
 {
-    // Initialize with custom dimensions
-    computeProgram = initComputeShader(filePath);
-    glGetProgramiv(computeProgram, GL_COMPUTE_WORK_GROUP_SIZE, workGroupSize);
+    initComputeShaderProgram(filePath);
     initTexture();
     initParameterBuffer();
 }

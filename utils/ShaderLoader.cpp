@@ -4,7 +4,7 @@
 #include <fstream>
 #include <sstream>
 
-void checkShaderCompile(GLuint shader)
+bool checkShaderCompile(GLuint shader)
 {
     GLint success;
     // Check if compilation was successful
@@ -16,7 +16,9 @@ void checkShaderCompile(GLuint shader)
         glGetShaderInfoLog(shader, 512, NULL, infoLog);
         std::cerr << "Shader Compilation Error:\n"
                   << infoLog << std::endl;
+        return false;
     }
+    return true;
 }
 
 std::string readShaderSource(const std::string &filePath)
@@ -44,7 +46,11 @@ GLuint initComputeShader(const std::string &file)
     GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
     glShaderSource(shader, 1, &shaderPtr, NULL);
     glCompileShader(shader);
-    checkShaderCompile(shader);
+    if (!checkShaderCompile(shader))
+    {
+        glDeleteShader(shader);
+        return 0;
+    }
 
     // Create the shader program and link the shader
     GLuint computeProgram = glCreateProgram();
