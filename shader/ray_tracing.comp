@@ -282,12 +282,12 @@ bool rayBVHHit(Ray worldRay, Model model, out RayCastHit best_hit, inout BVHDebu
     localRay.origin = (world2local * vec4(worldRay.origin, 1.0)).xyz;
     localRay.dir = (world2local * vec4(worldRay.dir, 0.0)).xyz;
 
-    int stack[30];
+    int stack[30]; // Store global ID
     int stack_ptr = 0;
-    stack[stack_ptr++] = 1;
+    stack[stack_ptr++] = model.nodeOffset + 1;
 
     while(stack_ptr > 0) {
-        int node_id = model.nodeOffset + stack[--stack_ptr];
+        int node_id = stack[--stack_ptr];
         BVHNode node = nodes[node_id];
 
         bvh_debug.box++;
@@ -312,9 +312,19 @@ bool rayBVHHit(Ray worldRay, Model model, out RayCastHit best_hit, inout BVHDebu
             continue;
         }
 
-        // Internal node node, push children
-        stack[stack_ptr++] = node.childL;
-        stack[stack_ptr++] = node.childR;
+        // Internal node, push children
+        int global_childL_id = model.nodeOffset + node.childL;
+        int global_childR_id = model.nodeOffset + node.childR;
+        bvh_debug.box += 2;
+        float L_distance = rayAABBHit(localRay, nodes[global_childL_id].boundingBox);
+        float R_distance = rayAABBHit(localRay, nodes[global_childR_id].boundingBox);
+        if (L_distance < R_distance) {
+            if (R_distance < best_hit.distance) stack[stack_ptr++] = global_childR_id;
+            if (L_distance < best_hit.distance) stack[stack_ptr++] = global_childL_id;
+        } else {
+            if (L_distance < best_hit.distance) stack[stack_ptr++] = global_childL_id;
+            if (R_distance < best_hit.distance) stack[stack_ptr++] = global_childR_id;
+        }
     }
 
     // Transform hit info to world space
@@ -411,8 +421,8 @@ vec4 renderBVH(Ray ray) {
     RayCastHit hit_info;
     rayCastForModel(ray, hit_info, bvh_debug);
 
-    float intensity = float(bvh_debug.box) / 100.0;
-    // float intensity = float(bvh_debug.tri) / 100.0;
+    // float intensity = float(bvh_debug.box) / 100.0;
+    float intensity = float(bvh_debug.tri) / 100.0;
     vec3 color = vec3(intensity);
     if (intensity > 1.0)
         color = vec3(1.0, 0.0, 0.0);
