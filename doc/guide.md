@@ -74,6 +74,7 @@ graph LR
         SSBOS[Sphere Buffer: GL_SHADER_STORAGE_BUFFER]
         SSBOM[Model Buffer: GL_SHADER_STORAGE_BUFFER]
         SSBOT[Triangle Buffer: GL_SHADER_STORAGE_BUFFER]
+        SSBON[Node Buffer: GL_SHADER_STORAGE_BUFFER]
         Tex[Accumulation Textures: Double Buffered]
         FBO[Rescale Framebuffer: FBO]
     end
@@ -82,6 +83,7 @@ graph LR
     S -.-> |Uploads Spheres| SSBOS
     S -.-> |Uploads Models| SSBOM
     S -.-> |Uploads Triangles| SSBOT
+    S -.-> |Uploads Nodes| SSBON
     RT -.-> |Uploads RenderParams| UBOP
     RT -.-> |Dispatches Compute to| Tex
     RT -.-> |Blits Final Render| FBO
@@ -91,6 +93,7 @@ graph LR
     SSBOS -.-> |Reads| CS
     SSBOM -.-> |Reads| CS
     SSBOT -.-> |Reads| CS
+    SSBON -.-> |Reads| CS
     UBOP -.-> |Reads| CS
 
     style Cpp fill:#bbf,stroke:#333,stroke-width:0px
@@ -135,9 +138,11 @@ classDiagram
         -Camera camera
         -GLuint sphereSsbo
         -GLuint modelSsbo
+        -GLuint nodeSsbo
         -GLuint triangleSsbo
         -vector~Triangle~ triangles
         -vector~Model~ models
+        -vector~BVHNode~ nodes
         -spawnSpheres() void
         -uploadBuffers() void
         +Scene(const GLuint shaderProgram)
@@ -196,7 +201,6 @@ classDiagram
 
     class Model {
         +mat4 transform
-        +AABB boundingBox
         +int32_t start
         +int32_t num_faces
         +Material material
@@ -208,6 +212,14 @@ classDiagram
         +vec2 uv[3]
     }
 
+    class BVHNode {
+        +int childL
+        +int childR
+        +int elementOffset
+        +int elementNum
+        +AABB boundingBox
+    }
+
     RayTracer *-- RenderParameters : composition
     Scene *-- Camera : composition
     Camera *-- CameraData : composition
@@ -215,9 +227,10 @@ classDiagram
     Scene ..> Sphere : spawns
     Scene ..> Model : manages
     Scene ..> Triangle : manages
+    Scene ..> BVHNode : manages
     Sphere *-- Material : composition
     Model *-- Material : composition
-    Model *-- AABB : composition
+    BVHNode *-- AABB : composition
 ```
 
 ### Shader Side
@@ -234,6 +247,7 @@ graph LR
         SB[SphereBuffer: Shader Storage Buffer]
         MB[ModelBuffer: Shader Storage Buffer]
         TB[TriangleBuffer: Shader Storage Buffer]
+        NB[NodeBuffer: Shader Storage Buffer]
     end
 
     subgraph Shader ["Ray Tracing Shader (compute.glsl / ray_tracing.glsl)"]
@@ -245,13 +259,14 @@ graph LR
         Output[(img_output: image2D)]
         RCFM[rayCastForModel]
         RTH[rayTriangleHit]
+        RBH[rayBVHHit]
         
-
         Main --> GPR
         Main --> RCFS
         RCFS --> RSH
         Main --> RCFM
-        RCFM --> RTH
+        RCFM --> RBH
+        RBH --> RTH
         Main --> Output
     end
 
@@ -259,10 +274,12 @@ graph LR
     SB -.-> |Read Access| RCFS
     MB -.-> |Read Access| RCFM
     TB -.-> |Read Access| RTH
+    NB -.-> |Read Access| RBH
     GPR -.-> Main
     RCFS -.-> Main
     RCFM -.-> Main
-    RTH -.-> RCFM
+    RBH -.-> RCFM
+    RTH -.-> RBH
     
     style Buffers fill:#d9b,stroke:#333,stroke-width:0px
     style Shader fill:#bbf,stroke:#333,stroke-width:0px
@@ -273,9 +290,8 @@ The shader architecture follows a standard ray tracing pipeline:
 1.  **Entry Point (`main`)**: Orchestrates the ray tracing process for each pixel.
 2.  **Ray Generation (`getPrimaryRay`)**: Uses `CameraBlock` uniform data to transform pixel coordinates into world-space rays.
 3.  **Intersection Logic (`rayCastForSphere` & `raySphereHit`)**: Iterates through the `SphereBuffer` to find the closest intersection point.
-4.  **Model Intersection (`rayCastForModel` & `rayTriangleHit`)**: Iterates through the `ModelBuffer` and `TriangleBuffer` to handle mesh geometry intersections using AABB acceleration.
+4.  **Model Intersection (`rayCastForModel`, `rayBVHHit`, & `rayTriangleHit`)**: Traverses the Bounding Volume Hierarchy (BVH) stored in `NodeBuffer` and `TriangleBuffer` to efficiently find mesh geometry intersections.
 5.  **Output**: Stores the resulting color (e.g., normal mapping or depth) into the `img_output` texture.
-
 # References
 
 - [How to Install and Use GLUT in Visual Studio Code | Medium](https://medium.com/@aleksej.gudkov/how-to-install-and-use-glut-in-visual-studio-code-46c30243b264)

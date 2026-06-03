@@ -1,5 +1,6 @@
 #version 460 core
 #define MAX_BOUNCE_TIMES 5
+const float INF = 1.0 / 0.0;
 
 // Process pixels in 16x16 blocks
 layout(local_size_x = 16, local_size_y = 16) in;
@@ -185,7 +186,7 @@ bool raySphereHit(Ray ray, Sphere sphere, out RayCastHit hit_info) {
     return false;
 }
 
-bool rayAABBHit(Ray ray, AABB box) {
+float rayAABBHit(Ray ray, AABB box) {
     vec3 invDir = 1.0 / ray.dir;
     vec3 t0 = (box.min - ray.origin) * invDir;
     vec3 t1 = (box.max - ray.origin) * invDir;
@@ -193,13 +194,15 @@ bool rayAABBHit(Ray ray, AABB box) {
     vec3 tmax = max(t0, t1);
     float tNear = max(max(tmin.x, tmin.y), tmin.z);
     float tFar = min(min(tmax.x, tmax.y), tmax.z);
-    return tFar >= tNear && tFar > 0.0;
+    if (tFar >= tNear && tFar > 0.0)
+        return tNear;
+    return INF;
 }
 
 bool rayCastForSphere(Ray ray, out RayCastHit best_hit) {
     // initialize best_hit with a very large distance
     bool found_hit = false;
-    best_hit.distance = 1e10;
+    best_hit.distance = INF;
     // loop over every object to get the closest hit
     for (int i = 0; i < num_sphere; i++) { 
         RayCastHit hit_info;
@@ -271,9 +274,9 @@ bool rayTriangleHit(Ray ray, Triangle tri, out RayCastHit hit_info) {
 
 bool rayBVHHit(Ray worldRay, Model model, out RayCastHit best_hit, inout BVHDebugInfo bvh_debug) {
     bool found_hit = false;
-    best_hit.distance = 1e10;
+    best_hit.distance = INF;
 
-    // Transform ray to local space to use AABB efficiently
+    // Transform ray to local space to use local BVH efficiently
     mat4 world2local = inverse(model.matrix);
     Ray localRay;
     localRay.origin = (world2local * vec4(worldRay.origin, 1.0)).xyz;
@@ -288,7 +291,7 @@ bool rayBVHHit(Ray worldRay, Model model, out RayCastHit best_hit, inout BVHDebu
         BVHNode node = nodes[node_id];
 
         bvh_debug.box++;
-        if (!rayAABBHit(localRay, node.boundingBox))
+        if (rayAABBHit(localRay, node.boundingBox) >= best_hit.distance)
             continue;
         
         if (node.childL == 0 && node.childR == 0) {
@@ -300,16 +303,8 @@ bool rayBVHHit(Ray worldRay, Model model, out RayCastHit best_hit, inout BVHDebu
                 Triangle tri = triangles[i];
                 RayCastHit hit_info;
                 if (rayTriangleHit(localRay, tri, hit_info)) {
-                    // Transform hit point to world space
-                    vec3 world_hit_point = (model.matrix * vec4(hit_info.point, 1.0)).xyz;
-                    float world_distance = length(world_hit_point - worldRay.origin);
-
-                    if (world_distance < best_hit.distance) {
-                        best_hit.distance = world_distance;
-                        best_hit.point = world_hit_point;
-                        best_hit.normal = normalize((model.matrix * vec4(hit_info.normal, 0.0)).xyz);
-                        best_hit.uv = hit_info.uv;
-                        best_hit.material = model.material;
+                    if (hit_info.distance < best_hit.distance) {
+                        best_hit = hit_info;
                         found_hit = true;
                     }
                 }
@@ -322,12 +317,18 @@ bool rayBVHHit(Ray worldRay, Model model, out RayCastHit best_hit, inout BVHDebu
         stack[stack_ptr++] = node.childR;
     }
 
+    // Transform hit info to world space
+    best_hit.point = (model.matrix * vec4(best_hit.point, 1.0)).xyz;
+    best_hit.distance = length(best_hit.point - worldRay.origin);
+    best_hit.normal = normalize((model.matrix * vec4(best_hit.normal, 0.0)).xyz);
+    best_hit.material = model.material;
+
     return found_hit;
 }
 
-bool rayCastForModel(Ray ray, out RayCastHit best_hit, inout BVHDebugInfo bvh_debug) {
+bool rayCastForModel(Ray ray, out RayCastHit best_hit, out BVHDebugInfo bvh_debug) {
     bool found_hit = false;
-    best_hit.distance = 1e10;
+    best_hit.distance = INF;
 
     // Loop over each model
     for (int i = 0; i < num_models; i++) {
