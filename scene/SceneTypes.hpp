@@ -29,6 +29,9 @@ struct alignas(16) Material
     glm::vec3 emission_color = glm::vec3(0.0f);
     float emission_strength = 0.0f;
     float roughness = 0.2f;
+    int32_t baseColorTextureID = -1;
+    int32_t roughnessTextureID = -1;
+    // int32_t _padding[1];
 };
 
 /**

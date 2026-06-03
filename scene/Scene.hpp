@@ -7,6 +7,7 @@
 #include "Camera.hpp"
 #include "SceneTypes.hpp"
 #include "Mesh.hpp"
+#include "../utils/TextureLoader.hpp"
 #include "../glm/glm/gtc/matrix_transform.hpp"
 #include <vector>
 #include <iostream>
@@ -40,6 +41,9 @@ private:
     std::vector<BVHNode> nodes;      // Global BVH node array
     std::vector<Triangle> triangles; // Global triangle array
     std::unordered_map<std::string, MeshReference> meshReferenceMap;
+
+    std::vector<GLuint> textureIDs;
+    std::unordered_map<std::string, int> textureMap;
 
     /**
      * @brief Initializes and uploads hardcoded sphere data to the GPU.
@@ -123,8 +127,48 @@ public:
         glm::vec3 position,
         glm::vec3 rotation,
         glm::vec3 scale,
-        Material material)
+        Material material,
+        const std::string &baseColorTextureFilename = "",
+        const std::string &roughnessTextureFilename = "")
     {
+        if (!baseColorTextureFilename.empty())
+        {
+            auto it = textureMap.find(baseColorTextureFilename);
+            if (it != textureMap.end())
+            {
+                material.baseColorTextureID = it->second;
+            }
+            else
+            {
+                GLuint textureID = loadTexture(baseColorTextureFilename);
+                if (textureID != 0)
+                {
+                    textureIDs.push_back(textureID);
+                    material.baseColorTextureID = textureIDs.size() - 1;
+                    textureMap[baseColorTextureFilename] = material.baseColorTextureID;
+                }
+            }
+        }
+
+        if (!roughnessTextureFilename.empty())
+        {
+            auto it = textureMap.find(roughnessTextureFilename);
+            if (it != textureMap.end())
+            {
+                material.roughnessTextureID = it->second;
+            }
+            else
+            {
+                GLuint textureID = loadTexture(roughnessTextureFilename);
+                if (textureID != 0)
+                {
+                    textureIDs.push_back(textureID);
+                    material.roughnessTextureID = textureIDs.size() - 1;
+                    textureMap[roughnessTextureFilename] = material.roughnessTextureID;
+                }
+            }
+        }
+
         // Check if the model is already loaded and referenced
         auto it = meshReferenceMap.find(filename);
         bool meshLoaded = (it != meshReferenceMap.end());
@@ -211,5 +255,23 @@ public:
     void sendData()
     {
         camera.sendCameraData();
+        bindTextures();
+    }
+
+    const std::vector<GLuint> &getTextureIDs() const
+    {
+        return textureIDs;
+    }
+
+    /**
+     * @brief Binds all scene textures to OpenGL texture units.
+     */
+    void bindTextures() const
+    {
+        for (size_t i = 0; i < textureIDs.size(); ++i)
+        {
+            glActiveTexture(GL_TEXTURE2 + i);
+            glBindTexture(GL_TEXTURE_2D, textureIDs[i]);
+        }
     }
 };

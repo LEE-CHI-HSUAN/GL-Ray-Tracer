@@ -192,7 +192,9 @@ int main(int argc, char **argv)
         glm::vec3(-4, 2, -11),
         glm::vec3(0, 0, 0),
         glm::vec3(1, 1, 1),
-        Material{.color = glm::vec4(0.4, 0.76, 0.21, 1.0), .roughness = 0.7}
+        Material{.color = glm::vec4(0.4, 0.76, 0.21, 1.0), .roughness = 0.7},
+        "asset/textures/Bricks101_1K-JPG/Bricks101_1K-JPG_Color.jpg"s,
+        "asset/textures/Bricks101_1K-JPG/Bricks101_1K-JPG_Roughness.jpg"s
     );
 
     scene->createModel(
@@ -200,7 +202,8 @@ int main(int argc, char **argv)
         glm::vec3(-4, -2, -6),
         glm::vec3(0, 0, 0),
         glm::vec3(1, 1, 1),
-        Material{.color = glm::vec4(0.8, 0.21, 0.17, 1.0), .roughness = 0.2}
+        Material{.color = glm::vec4(0.8, 0.21, 0.17, 1.0), .roughness = 1.0},
+        "asset/textures/checker.png"s
     );
 
     scene->createModel(
@@ -208,8 +211,18 @@ int main(int argc, char **argv)
         glm::vec3(4, 0, -11),
         glm::vec3(38, -23, 14),
         glm::vec3(1, 1, 1),
-        Material{.color = glm::vec4(0.9, 0.9, 0.9, 1.0), .roughness = 0.5}
+        Material{.color = glm::vec4(0.9, 0.0, 0.0, 1.0), .roughness = 0.8},
+        "asset/textures/Wood067_1K-JPG/Wood067_1K-JPG_Color.jpg"s,
+        "asset/textures/Wood067_1K-JPG/Wood067_1K-JPG_Roughness.jpg"s
     );
+
+    // scene->createModel(
+    //     "asset/models/monkey_s.obj"s,
+    //     glm::vec3(0, 0.1, -5),
+    //     glm::vec3(0, 0, 0),
+    //     glm::vec3(1, 1, 1),
+    //     Material{.color = glm::vec4(0.9, 0.9, 0.9, 1.0), .roughness = 0.5}
+    // );
 
     // register events
     glutKeyboardFunc(onKeyboard);
