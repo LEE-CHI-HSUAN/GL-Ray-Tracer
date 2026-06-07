@@ -5,6 +5,14 @@
 #include <string>
 #include <iostream>
 #include <cstdlib>
+#include <vector>
+#include <iomanip>
+#include <sstream>
+#include <filesystem>
+#include <algorithm>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "../stb/stb_image_write.h"
 
 #pragma region Private Methods
 
@@ -123,7 +131,58 @@ int RayTracer::dispatchCompute(float time)
     // Swap textures for the next frame
     currentTexture = 1 - currentTexture;
 
+    if (parameters.cumulative_samples >= max_samples)
+    {
+        saveImage();
+    }
+
     return 1;
+}
+
+void RayTracer::saveImage()
+{
+    // Create the output directory if it doesn't exist
+    std::filesystem::create_directories("output");
+
+    // Retrieve texture dimensions
+    std::vector<float> floatPixels(windowWidth * windowHeight * 4);
+
+    // Bind texture and retrieve pixel data
+    glBindTexture(GL_TEXTURE_2D, textures[1 - currentTexture]);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, floatPixels.data());
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Convert from RGBA32F (floats) to RGB8 (unsigned char)
+    std::vector<unsigned char> bytePixels(windowWidth * windowHeight * 3);
+    for (int i = 0; i < windowWidth * windowHeight; ++i)
+    {
+        float r = floatPixels[i * 4 + 0];
+        float g = floatPixels[i * 4 + 1];
+        float b = floatPixels[i * 4 + 2];
+
+        bytePixels[i * 3 + 0] = static_cast<unsigned char>(std::min(std::max(r, 0.0f), 1.0f) * 255.0f);
+        bytePixels[i * 3 + 1] = static_cast<unsigned char>(std::min(std::max(g, 0.0f), 1.0f) * 255.0f);
+        bytePixels[i * 3 + 2] = static_cast<unsigned char>(std::min(std::max(b, 0.0f), 1.0f) * 255.0f);
+    }
+
+    // Format the filename with 5 digits padded with 0 (e.g., 00000.jpg)
+    std::stringstream ss;
+    ss << "output/" << std::setfill('0') << std::setw(5) << savedFrameCount << ".jpg";
+    std::string filepath = ss.str();
+
+    // Flip vertically since OpenGL coordinate system is bottom-left
+    stbi_flip_vertically_on_write(1);
+
+    // Save image as JPG
+    if (stbi_write_jpg(filepath.c_str(), windowWidth, windowHeight, 3, bytePixels.data(), 95))
+    {
+        std::cout << "Successfully saved rendered scene to: " << filepath << " at " << parameters.cumulative_samples << " samples." << std::endl;
+        savedFrameCount++;
+    }
+    else
+    {
+        std::cerr << "Failed to save rendered scene to: " << filepath << std::endl;
+    }
 }
 
 RayTracer *RayTracer::setWindowSize(int width, int height)

@@ -31,7 +31,8 @@ private:
 
     GLuint uboParameters;        // parameters data buffer
     RenderParameters parameters; // parameters data container
-    int max_samples = 10000;     // Upper bound of SPP
+    int max_samples = 100;     // Upper bound of SPP
+    int savedFrameCount = 0;     // Counter for saved output images
 
     /**
      * @brief Initializes the compute shader program.
@@ -54,6 +55,11 @@ private:
      * @param time The elapsed time in seconds.
      */
     void sendRenderParameters(float time);
+
+    /**
+     * @brief Saves the current rendered texture to the output directory as a JPG.
+     */
+    void saveImage();
 
 public:
     /**

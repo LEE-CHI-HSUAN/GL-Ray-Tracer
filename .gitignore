@@ -2,3 +2,5 @@
 *.exe
 asset/
 glm/
+stb/
+output/

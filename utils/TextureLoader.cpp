@@ -1,6 +1,6 @@
 #include "TextureLoader.hpp"
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "../stb/stb_image.h"
 #include <iostream>
 
 GLuint loadTexture(const std::string &filename)
