@@ -4,6 +4,7 @@
 #include <memory>
 #include "renderer/RayTracer.hpp"
 #include "scene/Scene.hpp"
+#include "scene/SceneConfig.hpp"
 
 #define RT_DEFAULT_WIDTH 640
 #define RT_DEFAULT_HEIGHT 360
@@ -178,51 +179,7 @@ int main(int argc, char **argv)
     // init GL interface
     rayTracer = std::make_unique<RayTracer>("shader/ray_tracing.comp"s, RT_DEFAULT_WIDTH, RT_DEFAULT_HEIGHT);
     scene = std::make_unique<Scene>(rayTracer->getShaderProgram());
-
-    scene->createModel(
-        "asset/models/cube.obj"s,
-        glm::vec3(0, 0, -7),
-        glm::vec3(38, -23, 14),
-        glm::vec3(1, 1, 1),
-        Material{.color = glm::vec4(0), .emission_color = glm::vec3(1.0, 1.0, 1.0), .emission_strength = 10.0f}
-    );
-
-    scene->createModel(
-        "asset/models/cube.obj"s,
-        glm::vec3(-4, 2, -11),
-        glm::vec3(0, 0, 0),
-        glm::vec3(1, 1, 1),
-        Material{.color = glm::vec4(0.4, 0.76, 0.21, 1.0), .roughness = 0.7},
-        "asset/textures/Bricks101_1K-JPG/Bricks101_1K-JPG_Color.jpg"s,
-        "asset/textures/Bricks101_1K-JPG/Bricks101_1K-JPG_Roughness.jpg"s
-    );
-
-    scene->createModel(
-        "asset/models/monkey.obj"s,
-        glm::vec3(-4, -2, -6),
-        glm::vec3(0, 0, 0),
-        glm::vec3(1, 1, 1),
-        Material{.color = glm::vec4(0.8, 0.21, 0.17, 1.0), .roughness = 1.0},
-        "asset/textures/checker.png"s
-    );
-
-    scene->createModel(
-        "asset/models/monkey_s.obj"s,
-        glm::vec3(4, 0, -11),
-        glm::vec3(38, -23, 14),
-        glm::vec3(1, 1, 1),
-        Material{.color = glm::vec4(0.9, 0.0, 0.0, 1.0), .roughness = 0.8},
-        "asset/textures/Wood067_1K-JPG/Wood067_1K-JPG_Color.jpg"s,
-        "asset/textures/Wood067_1K-JPG/Wood067_1K-JPG_Roughness.jpg"s
-    );
-
-    // scene->createModel(
-    //     "asset/models/monkey_s.obj"s,
-    //     glm::vec3(0, 0.1, -5),
-    //     glm::vec3(0, 0, 0),
-    //     glm::vec3(1, 1, 1),
-    //     Material{.color = glm::vec4(0.9, 0.9, 0.9, 1.0), .roughness = 0.5}
-    // );
+    SceneConfig::loadScene2(*scene);
 
     // register events
     glutKeyboardFunc(onKeyboard);
