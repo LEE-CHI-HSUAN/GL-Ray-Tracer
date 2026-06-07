@@ -32,6 +32,7 @@ private:
         int triangleOffset;
     };
 
+    Camera camera;       // The camera used to view the scene
     GLuint sphereSsbo;   // Sphere data buffer
     GLuint modelSsbo;    // Model data buffer
     GLuint nodeSsbo;     // BVH node data buffer
@@ -129,8 +130,6 @@ private:
     }
 
 public:
-    Camera camera;       // The camera used to view the scene
-
     /**
      * @brief Constructor for the Scene class.
      * @param shaderProgram The shader program used for rendering.
@@ -272,6 +271,11 @@ public:
     void rotateCamera(glm::vec2 yawPitch)
     {
         camera.rotate(yawPitch);
+    }
+
+    void addCameraKeyframe(const Keyframe& keyframe)
+    {
+        camera.animation.addKeyframe(keyframe);
     }
 
     /**
