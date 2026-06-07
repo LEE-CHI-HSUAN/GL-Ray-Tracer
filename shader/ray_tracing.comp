@@ -229,7 +229,7 @@ bool rayTriangleHit(Ray ray, Triangle tri, out float u, out float v, out float t
     float det = dot(edge1, ray_cross_e2);
 
     // If determinant is near zero, ray is parallel to triangle plane
-    if (det > -EPSILON && det < EPSILON) {
+    if (det < EPSILON) {
         return false;
     }
 
