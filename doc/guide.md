@@ -299,6 +299,9 @@ The shader architecture follows a standard ray tracing pipeline:
 - [Modern OpenGL Tutorial - Compute Shaders](https://www.youtube.com/watch?v=nF4X9BIUzx0)
 - [Random directions on hemisphere](https://math.stackexchange.com/questions/1163260/random-directions-on-hemisphere-oriented-by-an-arbitrary-vector)
 - [Coding Adventure: Ray Tracing](https://www.youtube.com/watch?v=Qz0KTGYJtUk)
+- [Sampling the hemisphere](https://ameye.dev/notes/sampling-the-hemisphere/)
+- [Cosine-weighted-sampling](https://pema.dev/obsidian/math/light-transport/cosine-weighted-sampling.html)
+- Real-Time Rendering, Third Edition, Tomas Akenine-Moller, Eric Haines, Naty Hoffman
 
 ## Tutorials
 

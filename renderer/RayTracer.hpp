@@ -25,7 +25,7 @@ private:
     struct RenderParameters
     {
         float time;                 // Time in second
-        int samplePerPixel = 10;    // SPP, number of rays per pixel in one dispatch
+        int samplePerPixel = 2;    // SPP, number of rays per pixel in one dispatch
         int cumulative_samples = 0; // Number of SPP gathered for the current static scene
     };
 
