@@ -7,6 +7,7 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "SceneTypes.hpp"
+#include "Animation.hpp"
 #include "../glm/glm/gtc/matrix_transform.hpp"
 #include "../glm/glm/gtc/quaternion.hpp"
 #include <algorithm>
@@ -53,6 +54,18 @@ private:
     }
 
 public:
+    Animation animation;
+
+    void update(float time)
+    {
+        if (!animation.keyframes.empty())
+            camData.transform = animation.interpolate(time);
+        else
+            updateTransformMatrix();
+
+        sendCameraData();
+    }
+
     /**
      * @brief Constructor for the Camera class.
      * @param shaderProgram The shader program to which the camera data will be bound.

@@ -457,7 +457,7 @@ vec4 rayTrace(Ray ray, inout uint seed) {
     for (int i = 0; i <= MAX_BOUNCE_TIMES; i++) {
         BVHDebugInfo dummy;
         RayCastHit hit_info;
-        if (rayCastForModel(ray, hit_info, dummy)) {
+        if (rayCastForSphere(ray, hit_info)) {
             // sample texture
             vec3 base_color = hit_info.material.color.xyz;
             if (hit_info.material.baseColorTextureID != -1)

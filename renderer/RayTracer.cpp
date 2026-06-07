@@ -19,7 +19,8 @@
 void RayTracer::initComputeShaderProgram(const std::string &filePath)
 {
     computeProgram = initComputeShader(filePath);
-    if (computeProgram == 0) {
+    if (computeProgram == 0)
+    {
         std::cerr << "Failed to initialize compute shader." << std::endl;
         exit(1);
     }
@@ -224,6 +225,12 @@ void RayTracer::displayScreen()
 void RayTracer::ResetRenderSpp()
 {
     parameters.cumulative_samples = 0;
+}
+
+void RayTracer::ResetRenderSpp(int frameID)
+{
+    parameters.cumulative_samples = 0;
+    savedFrameCount = frameID;
 }
 
 GLuint RayTracer::getShaderProgram()

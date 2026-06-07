@@ -25,13 +25,13 @@ private:
     struct RenderParameters
     {
         float time;                 // Time in second
-        int samplePerPixel = 2;    // SPP, number of rays per pixel in one dispatch
+        int samplePerPixel = 10;    // SPP, number of rays per pixel in one dispatch
         int cumulative_samples = 0; // Number of SPP gathered for the current static scene
     };
 
     GLuint uboParameters;        // parameters data buffer
     RenderParameters parameters; // parameters data container
-    int max_samples = 100;     // Upper bound of SPP
+    int max_samples = 2000;      // Upper bound of SPP
     int savedFrameCount = 0;     // Counter for saved output images
 
     /**
@@ -100,6 +100,7 @@ public:
      * @brief Reset the counter of sampler. Call this when resizing screen or the screen is not static
      */
     void ResetRenderSpp();
+    void ResetRenderSpp(int frameID);
 
     /**
      * @brief Return the compute shader program.

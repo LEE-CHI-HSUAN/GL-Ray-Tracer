@@ -111,10 +111,23 @@ void onSpecialKeyboard(int key, int x, int y)
  */
 void idle()
 {
+    static float video_time = 0.0f;
+    const float video_end = 30.0f;
+
     scene->sendData();
-    float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
-    if (rayTracer->dispatchCompute(time))
+
+    float elapsed_time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
+    if (rayTracer->dispatchCompute(elapsed_time))
+        // Still cumulating samples
         glutPostRedisplay();
+    else if (video_time < video_end)
+    {
+        // Complete rendering current frame
+        video_time += 1.0f / 30.0f;
+        int frameID = video_time * 30.0f + 1e-7; // prevent floating point error
+        scene->update(video_time);
+        rayTracer->ResetRenderSpp(frameID);
+    }
 }
 
 /**

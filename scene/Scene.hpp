@@ -4,6 +4,7 @@
  */
 
 #pragma once
+#include "Animation.hpp"
 #include "Camera.hpp"
 #include "SceneTypes.hpp"
 #include "Mesh.hpp"
@@ -37,10 +38,13 @@ private:
     GLuint nodeSsbo;     // BVH node data buffer
     GLuint triangleSsbo; // Triangle data buffer
 
+    std::vector<Sphere> spheres;     // Object instances
     std::vector<Model> models;       // Object instances
     std::vector<BVHNode> nodes;      // Global BVH node array
     std::vector<Triangle> triangles; // Global triangle array
     std::unordered_map<std::string, MeshReference> meshReferenceMap;
+    std::vector<Animation> sphereAnimations;
+    std::vector<Animation> modelAnimations;
 
     std::vector<GLuint> textureIDs;
     std::unordered_map<std::string, int> textureMap;
@@ -51,11 +55,19 @@ private:
     void spawnSpheres()
     {
         int numSpheres = 4;
-        Sphere spheres[numSpheres];
-        spheres[0] = Sphere(glm::vec3(4.0, -55.0, -6.2), 54.2f, Material{.color = glm::vec4(0.9, 0.9, 0.9, 1.0), .roughness = 0.9});
-        spheres[1] = Sphere(glm::vec3(0.66, -0.2, -3.21), 0.63f, Material{.color = glm::vec4(0.8, 0.21, 0.17, 1.0), .roughness = 0.6});
-        spheres[2] = Sphere(glm::vec3(3.56, -0.0, -4.17), 1.0f, Material{.color = glm::vec4(0.4, 0.76, 0.21, 1.0), .roughness = 0.4});
-        spheres[3] = Sphere(glm::vec3(-13.1, 0.28, -38.9), 22.75f, Material{.color = glm::vec4(0), .emission_color = glm::vec3(1.0, 1.0, 1.0), .emission_strength = 5.0f});
+        Sphere spheresArr[numSpheres];
+        spheresArr[0] = Sphere(glm::vec3(0.0, -55.0, -6.2), 54.2f, Material{.color = glm::vec4(0.9, 0.9, 0.9, 1.0), .roughness = 0.9});
+        spheresArr[1] = Sphere(glm::vec3(-1.56, -0.2, -3.21), 0.63f, Material{.color = glm::vec4(0.8, 0.21, 0.17, 1.0), .roughness = 0.6});
+        spheresArr[2] = Sphere(glm::vec3(1.66, -0.0, -4.17), 1.0f, Material{.color = glm::vec4(0.4, 0.76, 0.21, 1.0), .roughness = 0.4});
+        spheresArr[3] = Sphere(glm::vec3(0.0, -30.0, -38.9), 22.75f, Material{.color = glm::vec4(0), .emission_color = glm::vec3(1.0, 1.0, 1.0), .emission_strength = 5.0f});
+
+        this->spheres.assign(spheresArr, spheresArr + numSpheres);
+        sphereAnimations.resize(numSpheres);
+
+        sphereAnimations[3].addKeyframe(Keyframe{.time = 0, .position = glm::vec3(0.0, -30.0, -38.9)});
+        sphereAnimations[3].addKeyframe(Keyframe{.time = 8, .position = glm::vec3(0.0, 0.28, -35.9)});
+        sphereAnimations[3].addKeyframe(Keyframe{.time = 15, .position = glm::vec3(0.0, 25.50, -25.0)});
+        sphereAnimations[3].addKeyframe(Keyframe{.time = 20, .position = glm::vec3(0.0, 50.50, 0.0)});
 
         // Create the buffer
         glGenBuffers(1, &sphereSsbo);
@@ -68,10 +80,22 @@ private:
 
         // Write data to the buffer
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int), &numSpheres);
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, numSpheres * sizeof(Sphere), spheres);
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, numSpheres * sizeof(Sphere), spheres.data());
 
         // Bind the buffer to the binding point
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, sphereSsbo);
+    }
+
+    void uploadSphereBuffer()
+    {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, sphereSsbo);
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, spheres.size() * sizeof(Sphere), spheres.data());
+    }
+
+    void uploadModelBuffer()
+    {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelSsbo);
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, models.size() * sizeof(Model), models.data());
     }
 
     /**
@@ -273,5 +297,34 @@ public:
             glActiveTexture(GL_TEXTURE2 + i);
             glBindTexture(GL_TEXTURE_2D, textureIDs[i]);
         }
+    }
+
+    void update(float time)
+    {
+        camera.update(time);
+
+        bool sphereUpdated = false;
+        for (size_t i = 0; i < spheres.size(); ++i)
+        {
+            if (!sphereAnimations[i].keyframes.empty())
+            {
+                spheres[i].center = glm::vec3(sphereAnimations[i].interpolate(time)[3]);
+                sphereUpdated = true;
+            }
+        }
+        if (sphereUpdated)
+            uploadSphereBuffer();
+
+        // bool modelUpdated = false;
+        // for (size_t i = 0; i < models.size(); ++i)
+        // {
+        //     if (!modelAnimations[i].keyframes.empty())
+        //     {
+        //         models[i].transform = modelAnimations[i].interpolate(time);
+        //         modelUpdated = true;
+        //     }
+        // }
+        // if (modelUpdated)
+        //     uploadBuffers();
     }
 };
