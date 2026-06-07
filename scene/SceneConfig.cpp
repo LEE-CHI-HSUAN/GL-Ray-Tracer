@@ -139,4 +139,8 @@ void SceneConfig::loadScene2(Scene& scene) {
         glm::vec3(1, 1, 1),
         Material{.color = glm::vec4(1.0, 1.0, 1.0, 1.0), .roughness = 1.0f}
     );
+
+    // Animation
+    scene.camera.animation.addKeyframe(Keyframe{.time = 0.0, .position = glm::vec3(0, 0, 0), .rotation = glm::vec3(0, 0, 0)});
+    scene.camera.animation.addKeyframe(Keyframe{.time = 5.0, .position = glm::vec3(0, 0, 5), .rotation = glm::vec3(-45, 0, 0)});
 }

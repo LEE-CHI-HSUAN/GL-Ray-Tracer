@@ -11,10 +11,10 @@
  */
 struct Keyframe
 {
-    float time;         // Time in seconds
-    glm::vec3 position; // Position in world space
-    glm::vec3 rotation; // Euler angles in degrees (Pitch, Yaw, Roll)
-    glm::vec3 scale;    // Scale factors
+    float time;                       // Time in seconds
+    glm::vec3 position;               // Position in world space
+    glm::vec3 rotation;               // Euler angles in degrees (Pitch, Yaw, Roll)
+    glm::vec3 scale = glm::vec3(1.0); // Scale factors
 };
 
 /**
