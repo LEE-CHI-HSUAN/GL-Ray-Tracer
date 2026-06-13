@@ -2,21 +2,19 @@
 #include "../utils/ShaderLoader.hpp"
 #include <GL/glew.h>
 #include <GL/freeglut.h>
-#include <string>
+#include <array>
+#include <format>
 #include <iostream>
-#include <cstdlib>
+#include <string>
+#include <string_view>
 #include <vector>
-#include <iomanip>
-#include <sstream>
-#include <filesystem>
-#include <algorithm>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../stb/stb_image_write.h"
 
 #pragma region Private Methods
 
-void RayTracer::initComputeShaderProgram(const std::string &filePath)
+void RayTracer::initComputeShaderProgram(std::string_view filePath)
 {
     computeProgram = initComputeShader(filePath);
     if (computeProgram == 0)
@@ -24,15 +22,15 @@ void RayTracer::initComputeShaderProgram(const std::string &filePath)
         std::cerr << "Failed to initialize compute shader." << std::endl;
         exit(1);
     }
-    glGetProgramiv(computeProgram, GL_COMPUTE_WORK_GROUP_SIZE, workGroupSize);
+    glGetProgramiv(computeProgram, GL_COMPUTE_WORK_GROUP_SIZE, workGroupSize.data());
 }
 
 void RayTracer::initTexture()
 {
     // Create the textures that the compute shader will write to and read from
-    glGenTextures(2, textures);
+    glGenTextures(static_cast<GLsizei>(textures.size()), textures.data());
 
-    for (int i = 0; i < 2; i++)
+    for (size_t i = 0; i < textures.size(); i++)
     {
         glBindTexture(GL_TEXTURE_2D, textures[i]);
 
@@ -43,7 +41,7 @@ void RayTracer::initTexture()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
         // Allocate texture memory with 32-bit float RGBA format
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, windowWidth, windowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, windowWidth, windowHeight, 0, GL_RGBA, GL_FLOAT, nullptr);
     }
 
     // Create a Framebuffer to "read" from the texture later during the blit operation
@@ -60,7 +58,7 @@ void RayTracer::initParameterBuffer()
     // Create the buffer
     glGenBuffers(1, &uboParameters);
     glBindBuffer(GL_UNIFORM_BUFFER, uboParameters);
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(RenderParameters), NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(RenderParameters), nullptr, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     // Bind the buffer to the binding point
@@ -78,7 +76,7 @@ void RayTracer::sendRenderParameters(float time)
 
 #pragma region Constructors
 
-RayTracer::RayTracer(const std::string &filePath)
+RayTracer::RayTracer(std::string_view filePath)
 {
     windowWidth = glutGet(GLUT_WINDOW_WIDTH);
     windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
@@ -89,7 +87,7 @@ RayTracer::RayTracer(const std::string &filePath)
 }
 
 RayTracer::RayTracer(
-    const std::string &filePath,
+    std::string_view filePath,
     const int windowWidth,
     const int windowHeight)
     : windowWidth(windowWidth), windowHeight(windowHeight)
@@ -166,10 +164,7 @@ void RayTracer::saveImage()
         bytePixels[i * 3 + 2] = static_cast<unsigned char>(std::min(std::max(b, 0.0f), 1.0f) * 255.0f);
     }
 
-    // Format the filename with 5 digits padded with 0 (e.g., 00000.jpg)
-    std::stringstream ss;
-    ss << "output/" << std::setfill('0') << std::setw(5) << savedFrameCount << ".jpg";
-    std::string filepath = ss.str();
+    std::string filepath = std::format("output/{:05}.jpg", savedFrameCount);
 
     // Flip vertically since OpenGL coordinate system is bottom-left
     stbi_flip_vertically_on_write(1);
@@ -192,10 +187,10 @@ RayTracer *RayTracer::setWindowSize(int width, int height)
     windowHeight = height;
 
     // Resize both textures to match the new window dimensions
-    for (int i = 0; i < 2; i++)
+    for (size_t i = 0; i < textures.size(); i++)
     {
         glBindTexture(GL_TEXTURE_2D, textures[i]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
     }
 
     return this;

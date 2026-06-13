@@ -6,14 +6,14 @@
 #pragma once
 #include "Animation.hpp"
 #include "Camera.hpp"
-#include "SceneTypes.hpp"
 #include "Mesh.hpp"
+#include "SceneTypes.hpp"
 #include "../utils/TextureLoader.hpp"
 #include "../glm/glm/gtc/matrix_transform.hpp"
-#include <vector>
 #include <iostream>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 /**
  * @class Scene
@@ -76,7 +76,7 @@ private:
         // Allocate memory
         // Sphere aligns by 16. The first 16 includes an int and padding.
         int bufferSize = 16 + numSpheres * sizeof(Sphere);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, NULL, GL_STATIC_DRAW);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, nullptr, GL_STATIC_DRAW);
 
         // Write data to the buffer
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int), &numSpheres);
@@ -108,7 +108,7 @@ private:
             glGenBuffers(1, &modelSsbo);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, modelSsbo);
         int bufferSizeModels = 16 + models.size() * sizeof(Model);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSizeModels, NULL, GL_STATIC_DRAW);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSizeModels, nullptr, GL_STATIC_DRAW);
         int numModels = models.size();
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(int), &numModels);
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 16, numModels * sizeof(Model), models.data());
@@ -145,6 +145,9 @@ public:
      * @param position Translation vector for the model.
      * @param rotation Rotation angles for the model.
      * @param scale Scaling factors for the model.
+     * @param material Material properties for the model.
+     * @param baseColorTextureFilename Optional path to the base color texture.
+     * @param roughnessTextureFilename Optional path to the roughness texture.
      */
     void createModel(
         const std::string &filename,

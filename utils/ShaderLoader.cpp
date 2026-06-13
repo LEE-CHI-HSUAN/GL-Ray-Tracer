@@ -1,8 +1,9 @@
 #include "ShaderLoader.hpp"
 #include <GL/freeglut.h>
-#include <iostream>
+#include <filesystem>
 #include <fstream>
-#include <sstream>
+#include <iostream>
+#include <string_view>
 
 bool checkShaderCompile(GLuint shader)
 {
@@ -13,7 +14,7 @@ bool checkShaderCompile(GLuint shader)
     {
         char infoLog[512];
         // Retrieve and print the error log
-        glGetShaderInfoLog(shader, 512, NULL, infoLog);
+        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
         std::cerr << "Shader Compilation Error:\n"
                   << infoLog << std::endl;
         return false;
@@ -21,9 +22,9 @@ bool checkShaderCompile(GLuint shader)
     return true;
 }
 
-std::string readShaderSource(const std::string &filePath)
+std::string readShaderSource(std::filesystem::path filePath)
 {
-    std::ifstream file(filePath);
+    std::ifstream file{filePath};
     if (!file.is_open())
     {
         std::cerr << "Error: Could not open shader file: " << filePath << std::endl;
@@ -35,7 +36,7 @@ std::string readShaderSource(const std::string &filePath)
     return buffer.str();
 }
 
-GLuint initComputeShader(const std::string &file)
+GLuint initComputeShader(std::string_view file)
 {
     // Load source from file
     std::cout << "Loading " << file << std::endl;
@@ -44,7 +45,7 @@ GLuint initComputeShader(const std::string &file)
 
     // Create and compile the compute shader
     GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
-    glShaderSource(shader, 1, &shaderPtr, NULL);
+    glShaderSource(shader, 1, &shaderPtr, nullptr);
     glCompileShader(shader);
     if (!checkShaderCompile(shader))
     {

@@ -1,10 +1,10 @@
 #pragma once
+#include "SceneTypes.hpp"
 #include "../cyCodeBase/cyTriMesh.h"
 #include "../cyCodeBase/cyBVH.h"
-#include "SceneTypes.hpp"
-#include <vector>
-#include <string>
 #include <iostream>
+#include <string_view>
+#include <vector>
 
 /**
  * @class Mesh
@@ -21,10 +21,10 @@ struct Mesh
      * @param filename Path to the OBJ file.
      * @return True if loading successful, false otherwise.
      */
-    bool loadFromFileObj(const std::string &filename)
+    bool loadFromFileObj(std::string_view filename)
     {
         cy::TriMesh mesh;
-        if (!mesh.LoadFromFileObj(filename.c_str()))
+        if (!mesh.LoadFromFileObj(filename.cbegin()))
         {
             std::cerr << "Failed to load model: " << filename << std::endl;
             return false;

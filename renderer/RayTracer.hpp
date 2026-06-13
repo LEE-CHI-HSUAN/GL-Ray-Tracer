@@ -5,7 +5,8 @@
 
 #pragma once
 #include <GL/glew.h>
-#include <string>
+#include <array>
+#include <string_view>
 
 /**
  * @class RayTracer
@@ -14,13 +15,13 @@
 class RayTracer
 {
 private:
-    GLuint computeProgram;  // The linked compute shader program
-    GLint workGroupSize[3]; // Work group size retrieved from the shader
-    GLuint textures[2];     // Double buffers for accumulation
-    int currentTexture = 0; // Index of the texture to write to this frame
-    GLuint fboRescale;      // Framebuffer object for blitting the texture to the screen
-    int windowWidth;        // Current window width
-    int windowHeight;       // Current window height
+    GLuint computeProgram;              // The linked compute shader program
+    std::array<GLint, 3> workGroupSize; // Work group size retrieved from the shader
+    std::array<GLuint, 2> textures;     // Double buffers for accumulation
+    int currentTexture = 0;             // Index of the texture to write to this frame
+    GLuint fboRescale;                  // Framebuffer object for blitting the texture to the screen
+    int windowWidth;                    // Current window width
+    int windowHeight;                   // Current window height
 
     struct RenderParameters
     {
@@ -38,7 +39,7 @@ private:
      * @brief Initializes the compute shader program.
      * @param filePath Path to the compute shader source.
      */
-    void initComputeShaderProgram(const std::string &filePath);
+    void initComputeShaderProgram(std::string_view filePath);
 
     /**
      * @brief Initializes the output texture and framebuffer.
@@ -66,7 +67,7 @@ public:
      * @brief Constructor with default window size.
      * @param filePath Path to the compute shader source.
      */
-    RayTracer(const std::string &filePath);
+    RayTracer(std::string_view filePath);
 
     /**
      * @brief Constructor with custom window size.
@@ -74,7 +75,7 @@ public:
      * @param windowWidth Initial width of the window.
      * @param windowHeight Initial height of the window.
      */
-    RayTracer(const std::string &filePath, const int windowWidth, const int windowHeight);
+    RayTracer(std::string_view filePath, const int windowWidth, const int windowHeight);
 
     /**
      * @brief Dispatches the compute shader to perform ray tracing.

@@ -1,10 +1,10 @@
+#include "renderer/RayTracer.hpp"
+#include "scene/Scene.hpp"
+#include "scene/SceneConfig.hpp"
 #include <GL/glew.h> // MUST be included before freeglut
 #include <GL/freeglut.h>
 #include <iostream>
 #include <memory>
-#include "renderer/RayTracer.hpp"
-#include "scene/Scene.hpp"
-#include "scene/SceneConfig.hpp"
 
 #define RT_DEFAULT_WIDTH 640
 #define RT_DEFAULT_HEIGHT 360
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
     std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 
     // init GL interface
-    rayTracer = std::make_unique<RayTracer>("shader/ray_tracing.comp"s, RT_DEFAULT_WIDTH, RT_DEFAULT_HEIGHT);
+    rayTracer = std::make_unique<RayTracer>("shader/ray_tracing.comp"sv, RT_DEFAULT_WIDTH, RT_DEFAULT_HEIGHT);
     scene = std::make_unique<Scene>(rayTracer->getShaderProgram());
     SceneConfig::loadScene2(*scene);
     scene->updateAnimation(0.0f);

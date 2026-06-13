@@ -2,12 +2,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../stb/stb_image.h"
 #include <iostream>
+#include <string_view>
 
-GLuint loadTexture(const std::string &filename)
+GLuint loadTexture(std::string_view filename)
 {
     int width, height, channels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char *data = stbi_load(filename.c_str(), &width, &height, &channels, 4);
+    unsigned char *data = stbi_load(filename.cbegin(), &width, &height, &channels, 4);
 
     if (!data)
     {

@@ -4,12 +4,12 @@
  */
 
 #pragma once
-#include <GL/glew.h>
-#include <GL/freeglut.h>
-#include "SceneTypes.hpp"
 #include "Animation.hpp"
+#include "SceneTypes.hpp"
 #include "../glm/glm/gtc/matrix_transform.hpp"
 #include "../glm/glm/gtc/quaternion.hpp"
+#include <GL/glew.h>
+#include <GL/freeglut.h>
 #include <algorithm>
 
 /**
@@ -89,7 +89,7 @@ public:
         // Create the buffer
         glGenBuffers(1, &uboCamera);
         glBindBuffer(GL_UNIFORM_BUFFER, uboCamera);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), NULL, GL_DYNAMIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         // Bind the buffer to the binding point
