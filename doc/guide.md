@@ -292,6 +292,7 @@ The shader architecture follows a standard ray tracing pipeline:
 3.  **Intersection Logic (`rayCastForSphere` & `raySphereHit`)**: Iterates through the `SphereBuffer` to find the closest intersection point.
 4.  **Model Intersection (`rayCastForModel`, `rayBVHHit`, & `rayTriangleHit`)**: Traverses the Bounding Volume Hierarchy (BVH) stored in `NodeBuffer` and `TriangleBuffer` to efficiently find mesh geometry intersections.
 5.  **Output**: Stores the resulting color (e.g., normal mapping or depth) into the `img_output` texture.
+
 # References
 
 - [How to Install and Use GLUT in Visual Studio Code | Medium](https://medium.com/@aleksej.gudkov/how-to-install-and-use-glut-in-visual-studio-code-46c30243b264)
@@ -302,6 +303,8 @@ The shader architecture follows a standard ray tracing pipeline:
 - [Sampling the hemisphere](https://ameye.dev/notes/sampling-the-hemisphere/)
 - [Cosine-weighted-sampling](https://pema.dev/obsidian/math/light-transport/cosine-weighted-sampling.html)
 - Real-Time Rendering, Third Edition, Tomas Akenine-Moller, Eric Haines, Naty Hoffman
+- [Ray Tracing in One Weekend](https://raytracing.github.io/)
+- [How to build a BVH](https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/)
 
 ## Tutorials
 

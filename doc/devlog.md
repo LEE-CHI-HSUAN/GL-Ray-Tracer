@@ -1,146 +1,236 @@
-# Phase 1: Basic Ray Tracer
+# CG2026 Final Project - Path Tracing
 
-## Primary ray generation
+R14922194 資工碩一 李季軒
 
-Ray tracing algorithm calculates a pixel color by casting a ray from the camera towards that pixel. The first step of ray tracing is to generate rays, represented by origin and direction.
-The origin of the ray is the camera position. The direction is the vector from origin to a pixel, so the goal is to calculate pixel position.
+[LEE-CHI-HSUAN/GL-Ray-Tracer: OpenGL-based path tracing algorithm.](https://github.com/LEE-CHI-HSUAN/GL-Ray-Tracer)
 
-### pixel position
+## Primary Ray Generation
 
-Imagine a plane in front of the camera where rays project onto it and then form an image. The pixel positions lie on that plane. There are infinite such planes we can use to calculate ray directions if we don't constraint their length.
+A ray tracing algorithm calculates a pixel's color by casting a ray from the camera into the scene. The first step is generating these rays, each represented by an origin and a direction. The origin of the ray corresponds to the camera's position. The direction is the vector pointing from this origin to a specific pixel on the projection plane, making the calculation of the pixel's position the initial goal.
 
-After I fixed the plane to a certain distance away, the only variance that can affect ray directions is the **field of view**, which is a configurable parameter of the camera.
+### Pixel Position
 
-Now that the width and height of the screen is definite, I first calculate the position of the bottom-left corner and then the offset from that corner according to screen space pixel position. The result is the corner of each pixel, so we need to offset by 0.5 to move to the center.
+Imagine a plane in front of the camera where projected rays form an image. The pixel positions lie on this plane. If we do not constrain the ray lengths, there are infinitely many such planes we can use to calculate ray directions.
 
-The direction of rays are finally acquired by subtraction and normalization. Rays are calculated in camera's local coordinate, we can multiply by its transformation matrix to get the rays in the global coordinate.
+Once the plane is fixed at a set distance, the primary variable affecting ray directions is the camera's configurable **field of view** (FOV).
 
-|      |      |      |
-| ---- | ---- | ---- |
+Given a fixed screen width and height, we first calculate the position of the bottom-left corner of the image plane. We then determine the offset from that corner based on the pixel's screen-space coordinates. Because this initial calculation yields the corner of each pixel, we apply an offset of 0.5 to target the pixel's center.
+
+The final ray directions are obtained by subtraction and normalization. Because these rays are initially calculated in the camera's local coordinate system, we multiply them by the camera's transformation matrix to convert them into global coordinates.
+
+|                                        |                                              |                                    |
+| -------------------------------------- | -------------------------------------------- | ---------------------------------- |
 | ![pixel](../asset/images/pixelpos.png) | ![pixel](../asset/images/pixelposcenter.png) | ![pixel](../asset/images/rays.png) |
 
-## Sphere primitive calculation
+## Sphere Primitive Calculation
 
-A ray needs to hit an object so that the color of the pixel can be calculated. The key information of a hit is the position and surface normal. Before we can render complex meshes, it is easier to just render some simple shapes that are lightweight and easy to compute ray-object intersection. A sphere is a good start because the intersection of a line and a sphere is easy to compute.
+For a pixel color to be calculated, its corresponding ray must intersect an object. The key details of this intersection are the hit position and the surface normal. Before rendering complex meshes, it is helpful to render simpler shapes that are lightweight and computationally straightforward. A sphere is a suitable starting point because line-sphere intersections are relatively easy to compute.
 
-A ray can be represented by a point plus a direction,
+A ray can be represented by a point plus a direction vector:
 
 $$
 P = \text{origin} + t\cdot\text{direction}
 $$
 
-where $t$ is an arbitrary positive integer. By determining $t$, we can find a point on the ray. So the possible 2 intersection points can be obtained by solving the following equation:
+where $t$ is a positive scalar. By solving for $t$, we can find points along the ray. The potential intersection points (up to two) are obtained by solving the following quadratic equation:
 
 $$
 \text{radius}^2 = ||\text{center} - P||^2 \\
 = ||\text{center} - (\text{origin} + t\cdot\text{direction})||^2
 $$
 
-This is a quadratic equation of $t$, and there is a formula to get the 2 roots of it.
+This equation can be solved using the quadratic formula to find the roots for $t$.
 
-With the basic intersection detection algorithm, I am able to find the point and normal on the surface of a sphere a ray hit. The following images are depth and normal which are rendered by ray casting.
+Using this basic intersection algorithm, we can determine the hit point and surface normal on the sphere. The following images display the depth and normal passes rendered via ray casting.
 
-|     |     |
-| --- | --- |
+|                                      |                                     |
+| ------------------------------------ | ----------------------------------- |
 | ![](../asset/images/ballsnormal.png) | ![](../asset/images/ballsdepth.png) |
 
 ### Side Track: Moving Camera
 
-I implement camera fly-through movement, allowing the user to view the scene from different angles. The camera transform matrix and viewport parameters are synchronized via uniform buffer object.
+To evaluate the scene from different angles, a camera fly-through system was implemented. The camera's transformation matrix and viewport parameters are synchronized with the GPU via a Uniform Buffer Object (UBO).
 
 ### Side Track: SSBO
 
-The scene comprising spheres was originally written in the compute shader. I move the scene data to the CPU code, and send it to the shader program using shader storage buffer object. This allows me to freely adjust and update the scene from the CPU side, and also pave the way for the future use, when I have to load 3D models. 
+The sphere scene data was originally hardcoded within the compute shader. It has since been moved to the CPU side and is transmitted to the shader program using a Shader Storage Buffer Object (SSBO). This change enables flexible scene updates from the CPU and establishes a foundation for loading 3D model data.
 
-## Ray tracing function
+## Ray Tracing Function
 
-The geometry of the sphere can now be probed by casting rays, I am able to implement a ray tracing function that calculates the path of a ray and the incoming light along it.
+Once the sphere geometry can be queried via ray casting, we can implement a basic ray tracing function to calculate the ray path and its accumulated light.
 
-Assuming the surface of the sphere is smooth and only reflect light like a mirror, this way, I don't have to calculate scattering rays and the ray casting from camera towards a specific direction is deterministic. When a ray hit a surface, a reflection ray is generated. The hit point is its origin, and the direction is
+Assuming a smooth, mirror-like surface simplifies the calculation, as we only need to evaluate specular reflections rather than scattered rays. This makes the path of a ray deterministic. When a ray hits a surface, a reflected ray is generated with the hit point as its origin and the direction calculated as:
+
 $$
-\text{reflect\_dir} = \text{ray\_dir} - 2 \cdot \text{normal} \cdot \text{ray\_dir}
+\text{reflect\_dir} = \text{ray\_dir} - 2 \cdot \text{normal} \cdot (\text{normal} \cdot \text{ray\_dir})
 $$
 
 ![](../asset/images/reflect_illustration.png)
 
-When a ray hits a surface, we multiply its color with the surface color to accumulate the influence along the path. When it hits a light source, we multiply ray color, light color, and light strength and add to the pixel color.
+When a ray hits a surface, the path throughput is multiplied by the surface color. When the ray intersects a light source, the accumulated throughput is multiplied by the light's color and intensity, and then added to the final pixel color.
 
-I placed 4 spheres in the scene, one of which is emissive, acting as a main light source. Besides, I also added a dim environment light to make the silhouette of them more conspicuous. There is a parameter to limit the number of reflection of a ray. When the number of reflection is set to 1, we can see the reflection of the main light in the other sphere. When it is increased to 2, the reflection of spheres appeared on each other. When it gets higher, more deeper reflection can be seen, at a cost of more computing resources.
+The test scene contains four spheres, one of which is emissive and acts as the primary light source. A dim ambient environment light is also included to make the silhouettes more visible. A parameter controls the maximum reflection depth (bounces). With a reflection limit of 1, only the primary light source is visible in reflections. Increasing the limit to 2 allows spheres to reflect one another, and higher limits yield deeper recursive reflections at the cost of increased computation.
 
-| #reflection=1 | #reflection=2 | #reflection=5 |
-| --- | --- | --- |
+| #reflection=1               | #reflection=2               | #reflection=5               |
+| --------------------------- | --------------------------- | --------------------------- |
 | ![](../asset/images/r1.png) | ![](../asset/images/r2.png) | ![](../asset/images/r5.png) |
 
 ## Diffuse Reflection
 
-General objects have no perfectly smooth surfaces, so to render realistic images, my next step is to expand the ray tracing function to compute diffuse light. I replaced the reflection function with a random direction generator.
+Real-world objects rarely have perfectly smooth surfaces. To improve realism, the next step is expanding the ray tracer to handle diffuse reflection. This is done by replacing the deterministic reflection model with a random direction generator.
 
-### Random direction on a hemisphere
+### Random Direction on a Hemisphere
 
+Since standard shader languages lack a built-in random number generator, a pseudo-random generator was implemented using bit-shifting operations. This generator samples a floating-point value in the range $[0, 1]$ from a uniform distribution.
 
-Because there is no built-in random number generator, I have to build one by bit shifting. This pseudo random number samples `float` [0 ,1] from a uniform distribution.
+Using these random values, several methods can be used to generate a random direction.
 
-With this random number generator, there are several ways to get a random direction.
+The most straightforward method is to sample three independent floating-point values and normalize the resulting vector. However, because this samples from a unit cube, the points tend to cluster toward the corners. This produces an uneven distribution, as shown in the image on the left.
 
-The most naive one is simply sample three floats and do normalization. But this has a significant flaw that points tends to grow denser at some corner, since is was sampled in a unit cube.
+A common workaround is to discard any sampled points that fall outside the unit sphere, which yields a uniform distribution on the sphere's surface. The drawback to this rejection sampling approach is that it requires a loop to resample until a valid point is found, though the average number of iterations remains low (fewer than two).
 
-A workaround is to discard points outside the unit sphere, and the result is a perfect uniform distribution on the surface of the sphere. The drawback of this is that it requires an infinite loop that keep resample points once the previous one failed, although the average iterations is less than 2.
+Alternatively, one could sample floats from a normal distribution, but this is computationally more complex than uniform sampling.
 
-Another approach is to sample floats from a normal distribution, but this is more complex to compute than uniform distribution.
+Instead, the implementation adopts a formula that samples and rescales two floats to compute the spherical coordinates of a point. This approach avoids some of the more expensive trigonometric operations associated with other methods:
 
-I ultimately adopt a formula that samples and rescales 2 floats to get the polar coordinate of a point. This method requires less expensive math operation (e.g cos, square root).
+$$
+\begin{cases} \theta = \cos^{-1}(\varepsilon_0) \\
+\phi = 2\pi\varepsilon_1 \end{cases}
+$$
 
-| More points on the edges | Even distribution  |
-| --- | --- |
+| More points on the edges            | Uniform distribution                |
+| ----------------------------------- | ----------------------------------- |
 | ![](../asset/images/sampledir1.png) | ![](../asset/images/sampledir2.png) |
 
-Finally, the goal is to generate directions on a hemisphere, however, the previous method generate points on a sphere. To fix it, we can examine whether a direction points outward by taking dot product, and flip the sign of the direction if it is negative.
+To generate directions over a hemisphere rather than an entire sphere, we evaluate whether the generated vector points outward relative to the surface normal using a dot product. If the result is negative, the direction vector is inverted.
+
+#### Cosine-Weighted Distribution
+
+The angle between the incoming ray and the surface normal affects the received energy per unit area, which is physically modeled by a cosine term. To avoid calculating this cosine factor explicitly for every sample, we can sample ray directions with a probability density proportional to $\cos(\theta)$. This allows us to average the samples directly without multiplying by $\cos(\theta)$. A simple approximation for this cosine-weighted direction is:
+
+```glsl
+sample_direction = normalize(surface_normal + random_unit_direction);
+```
+
+| Uniform                             | Cosine Weighted                     |
+| ----------------------------------- | ----------------------------------- |
+| ![](../asset/images/sampledir3.jpg) | ![](../asset/images/sampledir4.jpg) |
 
 ### Noise
 
-This is the result of the diffuse reflection. It looks terrible. Unlike smooth surface where lights travel along the same direction, diffuse reflection scatter rays stochastically.
+Initial results of diffuse reflection often display significant noise. Unlike smooth surfaces where light travels along deterministic paths, diffuse surfaces scatter rays stochastically.
 
 ![](../asset/images/scatter1.png)
 
-According to the rendering equation, I need to sample an innumerable amount of rays to approximate the integration of incoming light. But in practice, I need to set a limit to the number of sample per pixel.
+According to the rendering equation, evaluating the integral of incoming light requires a very high number of samples. In practice, we must set a limit on the number of samples per pixel.
 
-As the number of samples increases, the chaotic noise gradually yields to a clearer image, converging toward the true light transport. Observe how the stochastic artifacts diminish with higher sampling densities:
+As the sample count increases, the stochastic noise gradually diminishes, and the image converges toward a cleaner result. The reduction of artifacts can be observed at higher sampling densities:
 
-| 4 samples | 16 samples |
-| --- | --- |
-| ![](../asset/images/scatter4.png) | ![](../asset/images/scatter16.png) |
-| 196 samples | 10000 samples |
+| 4 samples                           | 16 samples                            |
+| ----------------------------------- | ------------------------------------- |
+| ![](../asset/images/scatter4.png)   | ![](../asset/images/scatter16.png)    |
+| 196 samples                         | 10000 samples                         |
 | ![](../asset/images/scatter196.png) | ![](../asset/images/scatter10000.png) |
 
-Despite the simple scene and geometry, it takes 58 ms to compute 100 samples per frame on my computer, which is roughly 17.2 FPS, and the image is far from satisfying with merely 100 samples. Althought we can spend more time to collect more samples to improve the image quality, full ray tracing can hardly be applied in real-time rendering. On the other hand, the inefficency of the current stochastic sampling method.
+Even with a simple scene, computing 100 samples per pixel per frame takes approximately 58 ms on a modern GPU (roughly 17.2 FPS), and the image remains noticeably noisy. While accumulating more samples over time improves visual quality, raw path tracing at high sample counts is challenging to achieve in real-time without optimization or denoising.
 
-## Rendering Mesh
+## Rendering Meshes
 
-The previous works to rendering sphere have scaffolded my ray tracing framework. Now I can proceed to render more complex shape after introducing mesh data.
+The initial work with spheres established the foundational ray tracing framework, making it possible to extend the renderer to support complex polygonal meshes.
 
-### Data structure
+### Data Structure
 
-model array
-triangle array store 
+A 3D model is composed of a list of triangles. The most direct approach for calculating intersections is to loop through every model and test the ray against every triangle. To enable the GPU to iterate over these triangles, the scene models are loaded on the CPU, packed into a continuous array, and uploaded to the GPU.
 
-Brutal force, loop over every model and every triangle, test ray triangle interaction.
+However, multiple models in a scene often share the same underlying mesh. Storing duplicate triangle data for each instance is memory inefficient. To address this, we decouple the model instance data from the mesh data into two separate arrays. The triangle array stores unique mesh data in local space. The model array stores instance-specific information, including its transformation matrix and an offset pointing to the corresponding mesh.
 
-Frame time: 1933 ms
-Scene triangle count: 1960
+![](../asset/images/modelarray1.jpg)
+
+Because the mesh data is in local space, we must apply the model's transformation matrix to obtain world-space coordinates. While this is similar to the operations performed in a standard vertex shader, doing this per-triangle in a ray tracer scales poorly with pixel and vertex count. Alternatively, we can transform the incoming ray into the model's local space. This allows us to perform the inverse transformation only once per ray before testing intersections.
+
+Without further optimization, this brute-force approach results in the following performance for a test scene:
+
+- **Frame Time:** 1933 ms
+- **Scene Triangle Count:** 1960
 
 ![](../asset/images/rendermesh.jpg)
 
-### optimization: AABB
+### Optimization: AABB
 
-Frame time: 244 ms
+An immediate optimization requiring minimal code modification is the ray-AABB (Axis-Aligned Bounding Box) test. By checking whether a ray intersects the bounding box of a model first, we can skip individual ray-triangle tests for models that are not hit, significantly speeding up the rendering process.
+
+![](../asset/images/boundingbox.jpg)
+
+This optimization reduces the frame time to 244 ms—roughly 12% of the original rendering time.
 
 ## Mixed Specular and Diffuse Reflection
 
-![](../asset/images/specular0.png)
-![](../asset/images/specular1.jpg)
+![](../asset/images/light_surface.jpg)
 
-## BVH
+As scene geometry becomes more complex, the shading model must be updated to produce more sophisticated images. Focusing on non-metallic materials, the previous reflection and diffuse reflection techniques can be combined to implement a material shader with both specular and diffuse components. The materials are defined by properties such as base color, emission color, emission strength, and roughness. In path tracing, any emissive surface can act as a light source, removing the need for dedicated light types.
 
-![](../asset/images/bvhbox.jpg)
+The resulting renders are shown below:
 
-frame time: 99 ms
+|                                    |                                    |      |
+| ---------------------------------- | ---------------------------------- | ---- |
+| ![](../asset/images/specular0.jpg) | ![](../asset/images/specular1.jpg) |      |
+
+Before further increasing visual complexity, optimization is needed to manage the GPU's computational load. The next step addresses performance by introducing a Bounding Volume Hierarchy (BVH).
+
+## Bounding Volume Hierarchy
+
+A BVH is a tree-like structure that hierarchically subdivides spatial elements into smaller groups. Hierarchical acceleration structures are widely used to reduce query times, with several common variations such as octrees and Binary Space Partitioning (BSP) trees. The bounding volumes can use various shapes; here, Axis-Aligned Bounding Boxes (AABBs) are used due to their simplicity and low computational cost.
+
+Using AABBs as the volume representation integrates well with the existing intersection logic.
+
+### Memory Layout
+
+While constructing a binary tree is straightforward on the CPU, the memory layout requires careful consideration because the BVH must be traversed efficiently on the GPU.
+
+GPUs perform best with contiguous memory access. Standard CPU tree implementations often use dynamically allocated nodes linked by pointers, which scatters data in memory and is difficult to traverse on the GPU. To resolve this, the BVH is constructed using a flat, array-based layout where child nodes are referenced by array indices rather than pointers.
+
+![](../asset/images/build_tree.jpg)
+
+This is similar to how a heap is represented within a flat array. The tree nodes are allocated within a pre-allocated contiguous array; when a new node is created, it is appended to the list, and children are linked via their array indices.
+
+Building the BVH is a divide-and-conquer process conceptually similar to quicksort. A parent node containing a range of triangles is partitioned into two child nodes along the spatial axis ($X$, $Y$, or $Z$) that provides the best split. This process recursively subdivides the geometry until a leaf node condition is met.
+
+### Traversing the BVH
+
+Since GPUs generally do not support or perform well with dynamic recursion, an iterative traversal approach is used. A fixed-size local stack of 30 integers is allocated within the shader to manage the traversal state without requiring recursive function calls.
+
+```glsl
+int stack[30];
+int stack_ptr = 0;
+stack[stack_ptr++] = model.nodeOffset + 1; // Start from root
+
+while(stack_ptr > 0) {
+    int node_id = stack[--stack_ptr];
+    // ... test node ...
+    // ... push children ...
+}
+```
+
+This stack-based approach manages the traversal efficiently within the GPU's registers.
+
+- **Frame Time:** 99 ms
+
+### AABB Culling and Children Ordering
+
+At each node during traversal, the ray is tested against the node's AABB. If the ray misses the bounding box, the entire subtree is skipped, avoiding redundant intersection checks.
+
+Additionally, performance can be improved by sorting child nodes based on proximity. By evaluating the intersection distance of both child AABBs, the closer child is pushed onto the stack last, ensuring it is traversed first. Finding closer intersections early allows us to cull more distant branches sooner based on the current closest hit distance $t$.
+
+- **Frame Time:** 73 ms
+
+### Complex Scene Test
+
+The optimized BVH allows the renderer to handle more detailed scenes:
+
+![](../asset/images/demo_10000.png)
+
+## Key Challenges
+
+- **Memory Layout:** Structuring spatial acceleration trees into flat, continuous GPU arrays to ensure optimal memory alignment and cache access.
+- **Self-Intersection Bugs:** Debugging visual artifacts (surface acne) caused by floating-point precision issues, resolved by pushing ray origins slightly along the surface normal.
+- **Temporal Progressive Rendering:** Mitigating variance and fireflies in progressive rendering when the scene is dominated by small, highly concentrated light sources.

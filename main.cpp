@@ -112,7 +112,7 @@ void onSpecialKeyboard(int key, int x, int y)
 void idle()
 {
     static float video_time = 0.0f;
-    const float video_end = 30.0f;
+    const float video_end = 15.0f;
 
     scene->sendData();
 
@@ -125,7 +125,7 @@ void idle()
         // Complete rendering current frame
         video_time += 1.0f / 30.0f;
         int frameID = video_time * 30.0f + 1e-7; // prevent floating point error
-        scene->update(video_time);
+        scene->updateAnimation(video_time);
         rayTracer->ResetRenderSpp(frameID);
     }
 }
@@ -193,6 +193,7 @@ int main(int argc, char **argv)
     rayTracer = std::make_unique<RayTracer>("shader/ray_tracing.comp"s, RT_DEFAULT_WIDTH, RT_DEFAULT_HEIGHT);
     scene = std::make_unique<Scene>(rayTracer->getShaderProgram());
     SceneConfig::loadScene2(*scene);
+    scene->updateAnimation(0.0f);
 
     // register events
     glutKeyboardFunc(onKeyboard);

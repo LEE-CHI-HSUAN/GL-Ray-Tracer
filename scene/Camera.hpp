@@ -32,8 +32,8 @@ private:
     glm::vec3 up;
 
     // configuration
-    float movementSpeed = 0.2f; // Speed of camera movement
-    float rotationSpeed = 2.0f; // Sensitivity of camera rotation
+    const float movementSpeed = 0.2f; // Speed of camera movement
+    const float rotationSpeed = 2.0f; // Sensitivity of camera rotation
 
     /**
      * @brief Updates the camera transformation matrix based on position and orientation.
@@ -56,14 +56,26 @@ private:
 public:
     Animation animation;
 
-    void update(float time)
+    /**
+     * @brief Updates the camera transformation based on animation.
+     * @param time The current simulation time.
+     */
+    void updateAnimation(float time)
     {
         if (!animation.keyframes.empty())
+        {
             camData.transform = animation.interpolate(time);
-        else
-            updateTransformMatrix();
 
-        sendCameraData();
+            // Extract position and orientation
+            position = glm::vec3(camData.transform[3]);
+            orientation = glm::quat_cast(camData.transform);
+            orientation = glm::normalize(orientation);
+
+            // Update cached direction vectors
+            front = orientation * glm::vec3(0.0f, 0.0f, -1.0f);
+            right = orientation * glm::vec3(1.0f, 0.0f, 0.0f);
+            up = orientation * glm::vec3(0.0f, 1.0f, 0.0f);
+        }
     }
 
     /**

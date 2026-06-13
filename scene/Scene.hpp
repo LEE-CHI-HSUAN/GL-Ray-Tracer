@@ -273,7 +273,11 @@ public:
         camera.rotate(yawPitch);
     }
 
-    void addCameraKeyframe(const Keyframe& keyframe)
+    /**
+     * @brief Adds a keyframe to the camera's animation.
+     * @param keyframe The keyframe to add.
+     */
+    void addCameraKeyframe(const Keyframe &keyframe)
     {
         camera.animation.addKeyframe(keyframe);
     }
@@ -304,9 +308,13 @@ public:
         }
     }
 
-    void update(float time)
+    /**
+     * @brief Updates animations for scene objects based on the elapsed time.
+     * @param time The current simulation time.
+     */
+    void updateAnimation(float time)
     {
-        camera.update(time);
+        camera.updateAnimation(time);
 
         bool sphereUpdated = false;
         for (size_t i = 0; i < spheres.size(); ++i)
