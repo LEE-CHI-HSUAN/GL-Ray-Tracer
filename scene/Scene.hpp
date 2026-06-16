@@ -55,15 +55,13 @@ private:
     void spawnSpheres()
     {
         int numSpheres = 4;
-        Sphere spheresArr[numSpheres];
-        spheresArr[0] = Sphere(glm::vec3(0.0, -55.0, -6.2), 54.2f, Material{.color = glm::vec4(0.9, 0.9, 0.9, 1.0), .roughness = 0.9});
-        spheresArr[1] = Sphere(glm::vec3(-1.56, -0.2, -3.21), 0.63f, Material{.color = glm::vec4(0.8, 0.21, 0.17, 1.0), .roughness = 0.6});
-        spheresArr[2] = Sphere(glm::vec3(1.66, -0.0, -4.17), 1.0f, Material{.color = glm::vec4(0.4, 0.76, 0.21, 1.0), .roughness = 0.4});
-        spheresArr[3] = Sphere(glm::vec3(0.0, -30.0, -38.9), 22.75f, Material{.color = glm::vec4(0), .emission_color = glm::vec3(1.0, 1.0, 1.0), .emission_strength = 5.0f});
+        this->spheres.resize(numSpheres);
+        this->spheres[0] = Sphere(glm::vec3(0.0, -55.0, -6.2), 54.2f, Material{.color = glm::vec4(0.9, 0.9, 0.9, 1.0), .roughness = 0.9});
+        this->spheres[1] = Sphere(glm::vec3(-1.56, -0.2, -3.21), 0.63f, Material{.color = glm::vec4(0.8, 0.21, 0.17, 1.0), .roughness = 0.6});
+        this->spheres[2] = Sphere(glm::vec3(1.66, -0.0, -4.17), 1.0f, Material{.color = glm::vec4(0.4, 0.76, 0.21, 1.0), .roughness = 0.4});
+        this->spheres[3] = Sphere(glm::vec3(0.0, -30.0, -38.9), 22.75f, Material{.color = glm::vec4(0), .emission_color = glm::vec3(1.0, 1.0, 1.0), .emission_strength = 5.0f});
 
-        this->spheres.assign(spheresArr, spheresArr + numSpheres);
         sphereAnimations.resize(numSpheres);
-
         sphereAnimations[3].addKeyframe(Keyframe{.time = 0, .position = glm::vec3(0.0, -30.0, -38.9)});
         sphereAnimations[3].addKeyframe(Keyframe{.time = 8, .position = glm::vec3(0.0, 0.28, -35.9)});
         sphereAnimations[3].addKeyframe(Keyframe{.time = 15, .position = glm::vec3(0.0, 25.50, -25.0)});
@@ -141,63 +139,63 @@ public:
 
     /**
      * @brief Loads a 3D model from an OBJ file and adds it to the scene.
-     * @param filename Path to the OBJ file.
+     * @param meshFile Path to the OBJ file.
      * @param position Translation vector for the model.
      * @param rotation Rotation angles for the model.
      * @param scale Scaling factors for the model.
      * @param material Material properties for the model.
-     * @param baseColorTextureFilename Optional path to the base color texture.
-     * @param roughnessTextureFilename Optional path to the roughness texture.
+     * @param baseColorTexture Optional path to the base color texture.
+     * @param roughnessTexture Optional path to the roughness texture.
      */
     void createModel(
-        const std::string &filename,
+        const std::string &meshFile,
         glm::vec3 position,
         glm::vec3 rotation,
         glm::vec3 scale,
         Material material,
-        const std::string &baseColorTextureFilename = "",
-        const std::string &roughnessTextureFilename = "")
+        const std::string &baseColorTexture = "",
+        const std::string &roughnessTexture = "")
     {
-        if (!baseColorTextureFilename.empty())
+        if (!baseColorTexture.empty())
         {
-            auto it = textureMap.find(baseColorTextureFilename);
+            auto it = textureMap.find(baseColorTexture);
             if (it != textureMap.end())
             {
                 material.baseColorTextureID = it->second;
             }
             else
             {
-                GLuint textureID = loadTexture(baseColorTextureFilename);
+                GLuint textureID = loadTexture(baseColorTexture);
                 if (textureID != 0)
                 {
                     textureIDs.push_back(textureID);
                     material.baseColorTextureID = textureIDs.size() - 1;
-                    textureMap[baseColorTextureFilename] = material.baseColorTextureID;
+                    textureMap[baseColorTexture] = material.baseColorTextureID;
                 }
             }
         }
 
-        if (!roughnessTextureFilename.empty())
+        if (!roughnessTexture.empty())
         {
-            auto it = textureMap.find(roughnessTextureFilename);
+            auto it = textureMap.find(roughnessTexture);
             if (it != textureMap.end())
             {
                 material.roughnessTextureID = it->second;
             }
             else
             {
-                GLuint textureID = loadTexture(roughnessTextureFilename);
+                GLuint textureID = loadTexture(roughnessTexture);
                 if (textureID != 0)
                 {
                     textureIDs.push_back(textureID);
                     material.roughnessTextureID = textureIDs.size() - 1;
-                    textureMap[roughnessTextureFilename] = material.roughnessTextureID;
+                    textureMap[roughnessTexture] = material.roughnessTextureID;
                 }
             }
         }
 
         // Check if the model is already loaded and referenced
-        auto it = meshReferenceMap.find(filename);
+        auto it = meshReferenceMap.find(meshFile);
         bool meshLoaded = (it != meshReferenceMap.end());
 
         Model model;
@@ -213,14 +211,14 @@ public:
         {
             // Load new model
             Mesh mesh;
-            if (!mesh.loadFromFileObj(filename))
+            if (!mesh.loadFromFileObj(meshFile))
                 return;
 
             model.nodeOffset = nodes.size();
             model.triangleOffset = triangles.size();
 
             // Update map
-            meshReferenceMap[filename] = {model.nodeOffset, model.triangleOffset};
+            meshReferenceMap[meshFile] = {model.nodeOffset, model.triangleOffset};
 
             // Append model's BVH nodes to the nodes array
             nodes.insert(nodes.end(),

@@ -3,7 +3,7 @@
 #include "../cyCodeBase/cyTriMesh.h"
 #include "../cyCodeBase/cyBVH.h"
 #include <iostream>
-#include <string_view>
+#include <string>
 #include <vector>
 
 /**
@@ -21,10 +21,10 @@ struct Mesh
      * @param filename Path to the OBJ file.
      * @return True if loading successful, false otherwise.
      */
-    bool loadFromFileObj(std::string_view filename)
+    bool loadFromFileObj(const std::string &filename)
     {
         cy::TriMesh mesh;
-        if (!mesh.LoadFromFileObj(filename.cbegin()))
+        if (!mesh.LoadFromFileObj(filename.c_str()))
         {
             std::cerr << "Failed to load model: " << filename << std::endl;
             return false;
