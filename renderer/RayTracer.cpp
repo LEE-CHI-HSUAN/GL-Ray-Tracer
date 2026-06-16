@@ -1,5 +1,7 @@
 #include "RayTracer.hpp"
 #include "../utils/ShaderLoader.hpp"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb/stb_image_write.h"
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <array>
@@ -8,9 +10,6 @@
 #include <string>
 #include <string_view>
 #include <vector>
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../stb/stb_image_write.h"
 
 #pragma region Private Methods
 
