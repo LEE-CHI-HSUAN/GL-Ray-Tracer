@@ -164,9 +164,8 @@ static _cy_nullptr_t nullptr;
 #endif
 
 // nodiscard
-//#if _CY_COMPILER_VER_MEETS(1901,40800,30000,1500)
 #if (__cplusplus>=201703L) || (defined(_MSVC_LANG) && _MSVC_LANG>=201703L)
-# if defined(__GNUC__) && !defined(__clang__)
+# if defined(__GNUC__) || defined(__clang__)
 #  define CY_NODISCARD __attribute__((warn_unused_result))
 # else
 #  define CY_NODISCARD [[nodiscard]]
