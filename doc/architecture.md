@@ -1,23 +1,20 @@
-# Development Environment Setup
+# Project Structure
 
-- OS: Windows 11
-- C++ compiler: Msys2 mingw-w64
-
-## Install Packages
-
-In the MinGW-w64 terminal, run:
+The project is organized into the following main directories, each serving a specific purpose:
 
 ```shell
-pacman -S mingw-w64-x86_64-freeglut
-pacman -S mingw-w64-x86_64-glew
-```
-
-## Compile
-
-```shell
-g++ main.cpp -o main.exe \
-  -I 'C:/msys64/mingw64/include' \
-  -lfreeglut -lglu32 -lopengl32 -lglew32 \
+[root]/
+├── doc/            # Project documentation.
+├── example/        # Example code demonstrating features.
+├── renderer/       # Core rendering engine components, interface of render pipeline.
+├── scene/          # Scene data management, camera, and object definitions.
+├── shader/         # GLSL shader programs for rendering.
+├── cyCodeBase/     # External libraries, utility classes for BVH, mesh loading, vectors.
+├── submodules/     # External libraries integrated as Git submodules. 
+│   └── stb/        # Single-file public domain libraries for image I/O.
+├── utils/          # Utility functions for loading files.
+├── main.cpp        # The primary entry point of the application.
+└── CMakeLists.txt  # The main CMake build configuration file for the project.
 ```
 
 # Roadmap
@@ -305,6 +302,7 @@ The shader architecture follows a standard ray tracing pipeline:
 - Real-Time Rendering, Third Edition, Tomas Akenine-Moller, Eric Haines, Naty Hoffman
 - [Ray Tracing in One Weekend](https://raytracing.github.io/)
 - [How to build a BVH](https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/)
+- [Temporally Reliable Motion Vectors for Real-time Ray Tracing | Eurographics'2021 Full Paper](https://www.youtube.com/watch?v=ufVarD6RE9g)
 
 ## Tutorials
 
