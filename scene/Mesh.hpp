@@ -1,7 +1,7 @@
 #pragma once
 #include "SceneTypes.hpp"
-#include "../cyCodeBase/cyTriMesh.h"
-#include "../cyCodeBase/cyBVH.h"
+#include "cyCodeBase/cyTriMesh.h"
+#include "cyCodeBase/cyBVH.h"
 #include <iostream>
 #include <string>
 #include <vector>

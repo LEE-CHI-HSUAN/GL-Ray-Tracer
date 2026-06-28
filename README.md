@@ -52,7 +52,7 @@ Your folder structure should look like this:
 
 Before building, ensure your GPU drivers are up to date. You will need the following core packages:
 
-- freeGLUT
+- FreeGLUT
 - GLEW
 - GLM (Optional: CMake will fetch and build this automatically if not found).
 

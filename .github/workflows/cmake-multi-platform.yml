@@ -58,19 +58,19 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt update
-        sudo apt install -y libgl1-mesa-dev libglu1-mesa-dev libglew-dev freeglut3-dev
+        sudo apt install -y libglew-dev freeglut3-dev libglm-dev
 
     - name: Install dependencies (Windows)
     # Install GLEW and FreeGLUT on Windows using pre-installed vcpkg
       if: runner.os == 'Windows'
       run: |
-        vcpkg install glew:x64-windows freeglut:x64-windows
+        vcpkg install glew:x64-windows freeglut:x64-windows glm:x64-windows
 
     - name: Install dependencies (macOS)
     # Install GLEW and FreeGLUT on macOS using Homebrew
       if: runner.os == 'macOS'
       run: |
-        brew install glew freeglut
+        brew install glew freeglut glm
 
     - name: Set Windows-specific CMake options
     # Tell CMake where to find vcpkg libraries on Windows (evaluated in the Configure CMake step)

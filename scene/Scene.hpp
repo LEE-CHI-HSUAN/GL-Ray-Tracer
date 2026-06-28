@@ -8,7 +8,7 @@
 #include "Camera.hpp"
 #include "Mesh.hpp"
 #include "SceneTypes.hpp"
-#include "../utils/TextureLoader.hpp"
+#include "utils/TextureLoader.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
 #include <string>

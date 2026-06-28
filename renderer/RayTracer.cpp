@@ -1,5 +1,5 @@
 #include "RayTracer.hpp"
-#include "../utils/ShaderLoader.hpp"
+#include "utils/ShaderLoader.hpp"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb/stb_image_write.h"
 #include <GL/glew.h>
@@ -129,10 +129,10 @@ int RayTracer::dispatchCompute(float time)
     // Swap textures for the next frame
     currentTexture = 1 - currentTexture;
 
-    if (parameters.cumulative_samples >= max_samples)
-    {
-        saveImage();
-    }
+    // if (parameters.cumulative_samples >= max_samples)
+    // {
+    //     saveImage();
+    // }
 
     return 1;
 }

@@ -303,6 +303,7 @@ The shader architecture follows a standard ray tracing pipeline:
 - [Ray Tracing in One Weekend](https://raytracing.github.io/)
 - [How to build a BVH](https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/)
 - [Temporally Reliable Motion Vectors for Real-time Ray Tracing | Eurographics'2021 Full Paper](https://www.youtube.com/watch?v=ufVarD6RE9g)
+- [Rendering (186.101, 2021S)](https://youtube.com/playlist?list=PLmIqTlJ6KsE2yXzeq02hqCDpOdtj6n6A9&si=_YAiQi0fx4PJSWTR)
 
 ## Tutorials
 
